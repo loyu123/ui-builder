@@ -11,7 +11,7 @@ function reset() {
       currentDevice: 'mobile',
       selection: [], zoom: 1, pan: { x: 24, y: 24 }, clipboard: [],
     },
-    history: { past: [], future: [], lastTag: '', lastAt: 0 },
+    history: { past: [], future: [], lastTag: '', lastAt: 0, log: [] },
   });
   const st = useStore.getState();
   useStore.setState({ editor: { ...st.editor, currentPageId: st.project.pages[0].id } });

@@ -7,7 +7,7 @@ import { DEVICES, useStore } from '../store';
 import { screenToBoard, snapThreshold } from '../lib/coords';
 import { absOrigin, findContainerAt, subtreeIds } from '../lib/tree';
 import { ModuleRenderer } from '../modules/renderers';
-import type { DeviceId, Frame, Node } from '../types';
+import type { Frame, Node } from '../types';
 
 type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 const MIN = 16;
@@ -23,7 +23,7 @@ interface Gesture {
   startPt: { x: number; y: number };
 }
 
-export function Canvas() {
+export function Canvas({ previewing }: { previewing?: boolean }) {
   const device = useStore(s => s.editor.currentDevice);
   const zoom = useStore(s => s.editor.zoom);
   const pan = useStore(s => s.editor.pan);
@@ -324,49 +324,74 @@ export function Canvas() {
   const worldH = pan.y + dev.h * zoom + 80;
 
   return (
-    <main style={wrap} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}>
-      {/* 设备页签（DV-01）+ 缩放（DV-03） */}
-      <div style={tabs}>
-        {(Object.keys(DEVICES) as DeviceId[]).map(d => (
-          <button key={d} onClick={() => useStore.getState().actions.setDevice(d)}
-            style={{ ...tab, ...(d === device ? tabActive : {}) }}>
-            {DEVICES[d].label}
-            <span style={{ fontSize: 10, color: d === device ? '#fff' : '#9ca3af', marginLeft: 6 }}>
-              {DEVICES[d].w}×{DEVICES[d].h}
-            </span>
-          </button>
-        ))}
-        <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: '#9ca3af', alignSelf: 'center', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: 6 }}>Ctrl+滚轮缩放</span>
+    <main style={{ ...wrap, position: 'relative' }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}>
+      {/* C：浮动信息条（缩放 / 对齐参考线 / 吸附） */}
+      {!previewing && (
+        <div style={{
+          position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
+          background: '#ffffff', border: '1px solid #ece7dd', borderRadius: 999,
+          padding: '5px 14px', fontSize: 11, color: '#8a8378',
+          boxShadow: '0 2px 10px rgba(31,35,40,.06)', whiteSpace: 'nowrap',
+        }}>
+          <span>缩放 <b style={{ color: '#1f2328' }}>{Math.round(zoom * 100)}%</b></span>
+          <span style={{ color: '#ece7dd' }}>|</span>
+          <span>对齐参考线 开</span>
+          <span style={{ color: '#ece7dd' }}>|</span>
+          <span>吸附 6px</span>
+          <span style={{ color: '#ece7dd' }}>|</span>
           {[0.5, 1, 1.5].map(z => (
             <button key={z} onClick={() => useStore.getState().actions.setZoom(z)}
               style={{ ...zoomBtn, ...(zoom === z ? zoomBtnActive : {}) }}>
               {z * 100}%
             </button>
           ))}
-          <b style={{ marginLeft: 6, color: '#374151' }}>{Math.round(zoom * 100)}%</b>
-        </span>
-      </div>
+          <span style={{ fontSize: 10, color: '#c9c2b6' }}>Ctrl+滚轮</span>
+        </div>
+      )}
 
-      {/* 画板台面（可滚动；Ctrl+滚轮以鼠标为锚点缩放） */}
-      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', background: '#f0f1f3', position: 'relative' }}>
-        <div style={{ width: worldW, height: worldH, position: 'relative' }}>
-          <div
-            data-board
-            ref={el => { setNodeRef(el); boardRef.current = el; }}
-            onPointerDown={e => beginGesture(e, 'marquee')}
-            style={{
-              position: 'absolute', top: pan.y, left: pan.x,
-              width: dev.w, height: dev.h,
-              transform: `scale(${zoom})`, transformOrigin: 'top left',
-              background: '#ffffff',
-              border: isOver ? '2px solid #f97316' : '1px solid #d1d5db',
-              borderRadius: device === 'desktop' ? 8 : 24,
-              boxShadow: '0 4px 24px rgba(0,0,0,.08)',
-              overflow: 'hidden',
-            }}
-          >
+      {/* 画板台面（C：暖米色；可滚动；Ctrl+滚轮以鼠标为锚点缩放） */}
+      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', background: '#f2ede4', position: 'relative' }}>
+        <div style={{ width: worldW, height: worldH + 40, position: 'relative' }}>
+          {/* 缩放外壳（含电脑窗口 chrome） */}
+          <div style={{
+            position: 'absolute', top: pan.y, left: pan.x,
+            width: dev.w,
+            transform: `scale(${zoom})`, transformOrigin: 'top left',
+          }}>
+            {/* 电脑画板：窗口 chrome（C） */}
+            {device === 'desktop' && (
+              <div style={{
+                height: 30, background: '#f7f4ee', border: '1px solid #e0d9cc', borderBottom: 'none',
+                borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center',
+                padding: '0 12px', gap: 5, boxSizing: 'border-box',
+              }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#f87171' }} />
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#fbbf24' }} />
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#34d399' }} />
+                <span style={{
+                  marginLeft: 12, flex: 1, maxWidth: 300, background: '#ffffff',
+                  border: '1px solid #e0d9cc', borderRadius: 5,
+                  fontSize: 10, color: '#a8a199', padding: '2px 10px',
+                }}>
+                  {page.name} / 登录页
+                </span>
+              </div>
+            )}
+            <div
+              data-board
+              ref={el => { setNodeRef(el); boardRef.current = el; }}
+              onPointerDown={e => beginGesture(e, 'marquee')}
+              style={{
+                width: dev.w, height: dev.h,
+                background: '#ffffff',
+                border: isOver ? '2px solid #f97316' : '1px solid #ddd5c7',
+                borderRadius: device === 'desktop' ? '0 0 10px 10px' : 24,
+                boxShadow: '0 4px 24px rgba(87,83,78,.10)',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
             {rootChildren.map(n => renderNode(n))}
 
             {guides.v.map((x, i) => (
@@ -396,6 +421,7 @@ export function Canvas() {
                 从左侧拖入模块
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
@@ -419,17 +445,6 @@ const HANDLE_POS: Record<Handle, React.CSSProperties> = {
 };
 
 const wrap: React.CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 };
-const tabs: React.CSSProperties = {
-  display: 'flex', gap: 8, padding: '10px 16px',
-  background: '#ffffff', borderBottom: '1px solid #e5e7eb',
-};
-const tab: React.CSSProperties = {
-  border: '1px solid #e5e7eb', background: '#ffffff', borderRadius: 8,
-  padding: '6px 14px', fontSize: 13, color: '#374151', cursor: 'pointer',
-};
-const tabActive: React.CSSProperties = {
-  background: '#f97316', borderColor: '#f97316', color: '#ffffff',
-};
 const zoomBtn: React.CSSProperties = {
   border: '1px solid #e5e7eb', background: '#ffffff', borderRadius: 6,
   padding: '3px 8px', fontSize: 11, color: '#374151', cursor: 'pointer', marginLeft: 4,
