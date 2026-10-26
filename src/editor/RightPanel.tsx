@@ -27,7 +27,8 @@ function importJson(file: File) {
 
 async function exportZip() {
   const { project } = useStore.getState();
-  const blob = await exportProjectZip(project);
+  const bytes = await exportProjectZip(project);
+  const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'ui-builder-export.zip';

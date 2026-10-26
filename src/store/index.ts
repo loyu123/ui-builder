@@ -31,7 +31,7 @@ function emptyProject(): Project {
     boards: { desktop: emptyBoard('desktop'), mobile: emptyBoard('mobile'), watch: emptyBoard('watch') },
   };
   return {
-    id: uid('p'), name: '我的原型', schemaVersion: 1,
+    id: uid('p'), name: '我的原型', schemaVersion: 2,
     createdAt: new Date().toISOString(),
     pages: [page],
     theme: {
@@ -40,6 +40,11 @@ function emptyProject(): Project {
       font: { family: 'system-ui, "PingFang SC", "Microsoft YaHei", sans-serif', base: 14 },
     },
   };
+}
+
+/** 测试/重置入口：全新空白项目 */
+export function createEmptyProject(): Project {
+  return emptyProject();
 }
 
 type PagesSnapshot = Page[];

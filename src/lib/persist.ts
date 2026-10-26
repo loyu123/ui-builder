@@ -37,6 +37,7 @@ export function migrate(p: Project): Project {
 }
 
 export async function saveProject(p: Project): Promise<void> {
+  if (typeof indexedDB === 'undefined') return;   // node 测试环境无 IndexedDB，静默跳过
   try {
     await set(KEY, JSON.parse(JSON.stringify(p)));
   } catch (e) {

@@ -105,6 +105,9 @@ function emitNode(node: Node, board: Board, indent: string, used: Set<string>): 
   return self;
 }
 
+// 页面文件夹名：保留中文等可读字符，仅替换文件系统非法字符
+const folderOf = (name: string) => name.replace(/[\\/:*?"<>|]/g, '').trim() || 'Page';
+
 function pageTsx(page: Page, device: DeviceId): string {
   const board: Board = page.boards[device];
   const used = new Set<string>();
@@ -116,7 +119,7 @@ function pageTsx(page: Page, device: DeviceId): string {
   return `${imports ? imports + '\n\n' : ''}import { fire } from "../../events/actions";
 
 // ${page.name} · ${device} 画板（由界面搭建器导出；手工修改前请先了解 data/pages.json 可再生成）
-export default function ${pascal(page.name)}${dev}() {
+export default function ${pascal(page.name) || 'Page'}${dev}() {
   return (
     <div style={{ position: "relative", width: ${board.frame.w}, height: ${board.frame.h}, background: "${root.style.background ?? '#ffffff'}", overflow: "hidden" }}>
 ${children}
@@ -127,7 +130,7 @@ ${children}
 }
 
 // ---------- 主流程 ----------
-export async function exportProjectZip(project: Project): Promise<Blob> {
+export async function exportProjectZip(project: Project): Promise<Uint8Array> {
   const zip = new JSZip();
   const f = (path: string, content: string) => zip.file(`${ROOT}/${path}`, content);
 
@@ -198,10 +201,11 @@ ${actions.map(k => `    case '${k}':\n      console.info('[action] ${k} — 待�
 
   // 页面（每页 × 每设备）
   for (const pg of project.pages) {
+    const folder = folderOf(pg.name);
     for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
-      f(`web/src/pages/${pascal(pg.name)}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device));
+      f(`web/src/pages/${folder}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device));
     }
-    f(`web/src/pages/${pascal(pg.name)}/index.tsx`,
+    f(`web/src/pages/${folder}/index.tsx`,
 `import Mobile from './Mobile';
 export default Mobile;
 `);
@@ -222,11 +226,11 @@ html, body, #root { height: 100%; margin: 0; }
 body { font-family: var(--font-base); font-size: var(--font-size-base); }
 `);
   f('web/src/App.tsx',
-`import ${pascal(project.pages[0].name)} from './pages/${pascal(project.pages[0].name)}';
+`import ${pascal(project.pages[0].name) || 'Page'} from './pages/${folderOf(project.pages[0].name)}';
 
 export default function App() {
   // v1 单页入口；多页路由在接口位（fire('onClick_navigate_xxx')）接入后扩展
-  return <${pascal(project.pages[0].name)} />;
+  return <${pascal(project.pages[0].name) || 'Page'} />;
 }
 `);
   f('web/src/main.tsx',
@@ -282,5 +286,5 @@ jobs:
       - run: cd web && npm install && npm run build
 `);
 
-  return zip.generateAsync({ type: 'blob' });
+  return zip.generateAsync({ type: 'uint8array' });
 }
