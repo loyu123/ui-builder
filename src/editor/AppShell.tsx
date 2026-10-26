@@ -1,0 +1,78 @@
+// AppShell · 三栏布局（WS-02）+ DndContext（CV-02）
+import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useEffect, useState } from 'react';
+import { useStore, NODE_DEFAULTS } from '../store';
+import { screenToBoard } from '../lib/coords';
+import { LeftPanel } from './LeftPanel';
+import { Canvas } from './Canvas';
+import { RightPanel } from './RightPanel';
+
+export function AppShell() {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
+  const hydrate = useStore(s => s.actions.hydrate);
+  const projectName = useStore(s => s.project.name);
+
+  useEffect(() => { void hydrate(); }, [hydrate]);
+
+  const [dragType, setDragType] = useState<string | null>(null);
+
+  function onDragStart(e: DragEndEvent) {
+    const data = e.active.data.current;
+    if (data?.fromLibrary) setDragType(data.type as string);
+  }
+  function onDragEnd(e: DragEndEvent) {
+    setDragType(null);
+    if (e.active.data.current?.fromLibrary && e.over?.id === 'board') {
+      const el = document.querySelector('[data-board]') as HTMLElement | null;
+      if (!el) return;
+      const zoom = useStore.getState().editor.zoom;
+      const p = screenToBoard(e.activatorEvent
+        ? (e.activatorEvent as PointerEvent).clientX
+        : 0, (e.activatorEvent as PointerEvent).clientY, el, zoom);
+      const meta = NODE_DEFAULTS[dragType!];
+      useStore.getState().actions.addNode(dragType!, {
+        x: Math.round(p.x - meta.w / 2),
+        y: Math.round(p.y - meta.h / 2),
+        w: meta.w, h: meta.h,
+      });
+    }
+  }
+
+  return (
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#fafafa' }}>
+        {/* 顶栏 */}
+        <header style={{
+          height: 44, flexShrink: 0, display: 'flex', alignItems: 'center',
+          gap: 12, padding: '0 16px', background: '#ffffff', borderBottom: '1px solid #e5e7eb',
+        }}>
+          <b style={{ fontSize: 14 }}>界面搭建器</b>
+          <span style={{ fontSize: 12, color: '#6b7280' }}>{projectName}</span>
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>v0 Demo · W1</span>
+        </header>
+
+        {/* 三栏 */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <LeftPanel />
+          <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+            <Canvas />
+          </div>
+          <RightPanel />
+        </div>
+      </div>
+
+      {/* 拖拽影子 */}
+      <DragOverlay dropAnimation={null}>
+        {dragType ? (
+          <div style={{
+            padding: '8px 14px', background: '#fff7ed', border: '1px dashed #f97316',
+            borderRadius: 8, fontSize: 12, color: '#c2410c',
+          }}>
+            {NODE_DEFAULTS[dragType]?.label ?? dragType}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
