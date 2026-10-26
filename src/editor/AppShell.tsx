@@ -57,10 +57,14 @@ export function AppShell() {
     }
   }
 
-  // CV-03 · 快捷键：Delete 删除选中，Esc 取消选中
+  // CV-03 · 快捷键：Delete 删除，Esc 取消，Ctrl+C/V 复制粘贴
   function onKeyDown(e: React.KeyboardEvent) {
     const st = useStore.getState();
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (e.key === 'Escape') { st.actions.select([]); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { st.actions.copySelection(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { st.actions.pasteClipboard(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
       e.preventDefault();
       st.actions.deleteNode(st.editor.selection[0]);

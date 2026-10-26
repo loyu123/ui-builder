@@ -1,9 +1,10 @@
-// ST-01 · zustand + immer：project / editor 两个切片（v0 精简版）
+// ST-01 · zustand + immer：project / editor 切片
 // history / ai 切片 W3/W4 再加
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { uid } from '../lib/id';
 import { loadProject, saveProject } from '../lib/persist';
+import { subtreeIds } from '../lib/tree';
 import type { Board, DeviceId, Frame, Node, Page, Project } from '../types';
 
 export const DEVICES: Record<DeviceId, { label: string; w: number; h: number }> = {
@@ -45,6 +46,8 @@ interface EditorSlice {
   currentDevice: DeviceId;
   selection: string[];
   zoom: number;
+  pan: { x: number; y: number };           // DV-03 · 画板在滚动区内的位置
+  clipboard: Array<{ rootId: string; subtree: Record<string, Node> }>;  // CV-03
 }
 
 interface Actions {
@@ -53,9 +56,15 @@ interface Actions {
   resizeNode: (id: string, frame: Frame) => void;
   deleteNode: (id: string) => void;
   select: (ids: string[]) => void;
+  copySelection: () => void;
+  pasteClipboard: () => void;
   setDevice: (d: DeviceId) => void;
   setPage: (id: string) => void;
   setZoom: (z: number) => void;
+  setPan: (p: { x: number; y: number }) => void;
+  addPage: () => void;
+  renamePage: (id: string, name: string) => void;
+  deletePage: (id: string) => void;
   hydrate: () => Promise<void>;
 }
 
@@ -71,20 +80,25 @@ function scheduleSave(p: Project) {
   saveTimer = setTimeout(() => void saveProject(p), 1000);
 }
 
+// 当前页/画板快捷获取（produce 草稿内用）
+function pick(draft: Project, pageId: string, device: DeviceId) {
+  const page = draft.pages.find(pg => pg.id === pageId) ?? draft.pages[0];
+  return { page, board: page.boards[device] };
+}
+
 export const useStore = create<Store>((set, get) => ({
   project: emptyProject(),
-  editor: { currentPageId: '', currentDevice: 'mobile', selection: [], zoom: 1 },
-
-  // —— 内部工具（不暴露给组件直接调用） ——
-  // 无
+  editor: {
+    currentPageId: '', currentDevice: 'mobile',
+    selection: [], zoom: 1, pan: { x: 24, y: 24 }, clipboard: [],
+  },
 
   actions: {
     // CV-02/06 · 拖入画布或容器：按落点创建节点
     addNode: (type, frame, parentId) => {
       const s = get();
       const p = produce(s.project, draft => {
-        const page = draft.pages.find(pg => pg.id === s.editor.currentPageId) ?? draft.pages[0];
-        const board = page.boards[s.editor.currentDevice];
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const meta = NODE_DEFAULTS[type];
         const id = uid('n');
         const pid = parentId ?? board.rootId;
@@ -109,8 +123,7 @@ export const useStore = create<Store>((set, get) => ({
     moveNode: (id, x, y, newParentId) => {
       const s = get();
       const p = produce(s.project, draft => {
-        const page = draft.pages.find(pg => pg.id === s.editor.currentPageId) ?? draft.pages[0];
-        const board = page.boards[s.editor.currentDevice];
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
         if (!n || !n.parentId) return;
         n.frame.x = Math.round(x);
@@ -130,8 +143,7 @@ export const useStore = create<Store>((set, get) => ({
     resizeNode: (id, frame) => {
       const s = get();
       const p = produce(s.project, draft => {
-        const page = draft.pages.find(pg => pg.id === s.editor.currentPageId) ?? draft.pages[0];
-        const board = page.boards[s.editor.currentDevice];
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
         if (n && n.parentId) {
           n.frame = {
@@ -144,19 +156,15 @@ export const useStore = create<Store>((set, get) => ({
       set({ project: p });
     },
 
-    select: ids => set(s => ({ editor: { ...s.editor, selection: ids } })),
-
     // CV-03 · 删除节点及其子树
     deleteNode: id => {
       const s = get();
       const p = produce(s.project, draft => {
-        const page = draft.pages.find(pg => pg.id === s.editor.currentPageId) ?? draft.pages[0];
-        const board = page.boards[s.editor.currentDevice];
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
         if (!n || !n.parentId) return;
         const parent = board.nodes[n.parentId];
         parent.children = parent.children.filter(c => c !== id);
-        // 递归删除子树
         const stack = [id];
         while (stack.length) {
           const cur = stack.pop()!;
@@ -170,11 +178,94 @@ export const useStore = create<Store>((set, get) => ({
       set({ project: p, editor: { ...s.editor, selection: [] } });
     },
 
+    select: ids => set(s => ({ editor: { ...s.editor, selection: ids } })),
+
+    // CV-03 · 复制选中（含子树快照）
+    copySelection: () => {
+      const s = get();
+      const page = s.project.pages.find(pg => pg.id === s.editor.currentPageId) ?? s.project.pages[0];
+      const board = page.boards[s.editor.currentDevice];
+      const clipboard = s.editor.selection
+        .filter(id => board.nodes[id])
+        .map(id => {
+          const subtree: Record<string, Node> = {};
+          for (const nid of subtreeIds(board, id)) {
+            subtree[nid] = JSON.parse(JSON.stringify(board.nodes[nid]));
+          }
+          return { rootId: id, subtree };
+        });
+      set({ editor: { ...s.editor, clipboard } });
+    },
+
+    // CV-03 · 粘贴：整子树重建 id，偏移 8px
+    pasteClipboard: () => {
+      const s = get();
+      if (!s.editor.clipboard.length) return;
+      let newSel: string[] = [];
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        newSel = [];
+        for (const clip of s.editor.clipboard) {
+          const idMap: Record<string, string> = {};
+          for (const oldId of Object.keys(clip.subtree)) idMap[oldId] = uid('n');
+          for (const [oldId, src] of Object.entries(clip.subtree)) {
+            const copy: Node = JSON.parse(JSON.stringify(src));
+            copy.id = idMap[oldId];
+            copy.parentId = oldId === clip.rootId
+              ? board.rootId
+              : (idMap[copy.parentId as string] ?? board.rootId);
+            if (oldId === clip.rootId) { copy.frame.x += 8; copy.frame.y += 8; }
+            copy.children = src.children.map(c => idMap[c]).filter(Boolean);
+            board.nodes[copy.id] = copy;
+          }
+          board.nodes[board.rootId].children.push(idMap[clip.rootId]);
+          newSel.push(idMap[clip.rootId]);
+        }
+      });
+      scheduleSave(p);
+      set({ project: p, editor: { ...s.editor, selection: newSel } });
+    },
+
     setDevice: d => set(s => ({ editor: { ...s.editor, currentDevice: d, selection: [] } })),
     setPage: id => set(s => ({ editor: { ...s.editor, currentPageId: id, selection: [] } })),
-
-    // DV-03 · 画布缩放（25% ~ 200%）
     setZoom: z => set(s => ({ editor: { ...s.editor, zoom: Math.min(2, Math.max(0.25, z)) } })),
+    setPan: p => set(s => ({ editor: { ...s.editor, pan: p } })),
+
+    // WS-04 · 页面管理
+    addPage: () => {
+      const s = get();
+      const id = uid('pg');
+      const p = produce(s.project, draft => {
+        draft.pages.push({
+          id, name: `页面 ${draft.pages.length + 1}`,
+          boards: { desktop: emptyBoard('desktop'), mobile: emptyBoard('mobile'), watch: emptyBoard('watch') },
+        });
+      });
+      scheduleSave(p);
+      set({ project: p, editor: { ...s.editor, currentPageId: id, selection: [] } });
+    },
+
+    renamePage: (id, name) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const pg = draft.pages.find(x => x.id === id);
+        if (pg && name.trim()) pg.name = name.trim();
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    deletePage: id => {
+      const s = get();
+      if (s.project.pages.length <= 1) return;
+      const p = produce(s.project, draft => {
+        draft.pages = draft.pages.filter(pg => pg.id !== id);
+      });
+      scheduleSave(p);
+      const currentPageId = p.pages.some(pg => pg.id === s.editor.currentPageId)
+        ? s.editor.currentPageId : p.pages[0].id;
+      set({ project: p, editor: { ...s.editor, currentPageId, selection: [] } });
+    },
 
     hydrate: async () => {
       const saved = await loadProject();
@@ -183,7 +274,6 @@ export const useStore = create<Store>((set, get) => ({
         project,
         editor: { ...s.editor, currentPageId: project.pages[0].id },
       }));
-      void get();
     },
   },
 }));
