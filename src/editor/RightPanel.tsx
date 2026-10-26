@@ -12,6 +12,19 @@ function exportJson() {
   URL.revokeObjectURL(a.href);
 }
 
+function clearBoard() {
+  const s = useStore.getState();
+  const p = structuredClone(s.project);
+  const page = p.pages.find(pg => pg.id === s.editor.currentPageId) ?? p.pages[0];
+  const board = page.boards[s.editor.currentDevice];
+  const root = board.nodes[board.rootId];
+  root.children = [];
+  for (const id of Object.keys(board.nodes)) {
+    if (id !== board.rootId) delete board.nodes[id];
+  }
+  useStore.setState({ project: p, editor: { ...s.editor, selection: [] } });
+}
+
 export function RightPanel() {
   const selection = useStore(s => s.editor.selection);
   const device = useStore(s => s.editor.currentDevice);
@@ -53,6 +66,9 @@ export function RightPanel() {
 
         <button onClick={exportJson} style={btn}>
           导出 JSON
+        </button>
+        <button onClick={clearBoard} style={{ ...btn, background: '#ffffff', color: '#b91c1c', border: '1px solid #fecaca' }}>
+          清空当前画板
         </button>
         <div style={{ fontSize: 11, color: '#9ca3af' }}>
           已开启自动保存（1s 防抖），刷新页面自动还原。

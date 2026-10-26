@@ -1,7 +1,7 @@
 // AppShell · 三栏布局（WS-02）+ DndContext（CV-02）
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
-import { useStore, NODE_DEFAULTS } from '../store';
+import { useStore, NODE_DEFAULTS, DEVICES } from '../store';
 import { screenToBoard } from '../lib/coords';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
@@ -22,19 +22,21 @@ export function AppShell() {
   }
   function onDragEnd(e: DragEndEvent) {
     setDragType(null);
-    if (e.active.data.current?.fromLibrary && e.over?.id === 'board') {
+    const type = dragType;
+    if (type && e.active.data.current?.fromLibrary && e.over?.id === 'board') {
       const el = document.querySelector('[data-board]') as HTMLElement | null;
       if (!el) return;
+      // 松开位置 = 按下位置 + 拖拽位移（dnd-kit 的 delta）
+      const act = e.activatorEvent as PointerEvent;
       const zoom = useStore.getState().editor.zoom;
-      const p = screenToBoard(e.activatorEvent
-        ? (e.activatorEvent as PointerEvent).clientX
-        : 0, (e.activatorEvent as PointerEvent).clientY, el, zoom);
-      const meta = NODE_DEFAULTS[dragType!];
-      useStore.getState().actions.addNode(dragType!, {
-        x: Math.round(p.x - meta.w / 2),
-        y: Math.round(p.y - meta.h / 2),
-        w: meta.w, h: meta.h,
-      });
+      const p = screenToBoard(act.clientX + e.delta.x, act.clientY + e.delta.y, el, zoom);
+      const meta = NODE_DEFAULTS[type];
+      const device = useStore.getState().editor.currentDevice;
+      const dev = DEVICES[device];
+      // 钳制在画板范围内（v0 防呆；W2 吸附系统替换）
+      const x = Math.min(Math.max(0, Math.round(p.x - meta.w / 2)), Math.max(0, dev.w - meta.w));
+      const y = Math.min(Math.max(0, Math.round(p.y - meta.h / 2)), Math.max(0, dev.h - meta.h));
+      useStore.getState().actions.addNode(type, { x, y, w: meta.w, h: meta.h });
     }
   }
 

@@ -50,6 +50,7 @@ interface EditorSlice {
 interface Actions {
   addNode: (type: string, frame: Frame) => void;
   moveNode: (id: string, x: number, y: number) => void;
+  resizeNode: (id: string, frame: Frame) => void;
   select: (ids: string[]) => void;
   setDevice: (d: DeviceId) => void;
   setPage: (id: string) => void;
@@ -108,6 +109,24 @@ export const useStore = create<Store>((set, get) => ({
         if (n && n.parentId) {
           n.frame.x = Math.round(x);
           n.frame.y = Math.round(y);
+        }
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // CV-05 · pointerup 时提交最终尺寸与位置
+    resizeNode: (id, frame) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const page = draft.pages.find(pg => pg.id === s.editor.currentPageId) ?? draft.pages[0];
+        const board = page.boards[s.editor.currentDevice];
+        const n = board.nodes[id];
+        if (n && n.parentId) {
+          n.frame = {
+            x: Math.round(frame.x), y: Math.round(frame.y),
+            w: Math.round(frame.w), h: Math.round(frame.h),
+          };
         }
       });
       scheduleSave(p);
