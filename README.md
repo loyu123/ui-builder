@@ -1,5 +1,7 @@
 # 界面搭建器（UI Builder）
 
+> **v1.0.0** · MIT License
+
 可视化 UI 搭建工具：空白画布 + 拖拽模块 → 多设备界面设计 → 模块功能备注/事件接口位 → 一键导出 React 工程。
 
 技术栈：React 18 + TypeScript + Vite 7 + dnd-kit + zustand/immer + IndexedDB（idb-keyval）+ JSZip。
@@ -44,9 +46,20 @@ src/
 
 ## 测试
 
+共 **20 条**（`npm test`）：
+
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/store/store.test.ts` — 回归 9 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入、性能冒烟）
 - `src/exporter/exporter.test.ts` — 导出端到端 4 条（zip 规格/组件齐全/pages.json 回读/TSX 引用）
+- `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（供人工解压做真实构建验收）
+
+**导出工程真实构建验收**：已实测通过（zip → 解压 → `npm i` → `tsc + vite build` 绿 → `vite preview` HTTP 200）。
+
+## 实现说明
+
+- **撤销/重做**：整步快照栈（deep clone pages，上限 50 步），拖动手势 400ms 内合并为一步。未采用 immer patches（方案中的可选项），内存足够且实现简单；后续如需细粒度历史可切换 patches。
+- **AI 建议**：v1 为规则引擎（5 类规则，纯本地计算）；本地 `.env` 已预留远程 AI 网关（embed/rerank）管道，未配置时自动回退，建议应用走通用撤销栈。
+- **错误兜底**：`ErrorBoundary` 包裹应用，渲染异常不白屏，提供刷新/清缓存出口。
 
 ## 路线
 
