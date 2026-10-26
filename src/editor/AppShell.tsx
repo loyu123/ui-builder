@@ -1,8 +1,10 @@
 // AppShell · 三栏布局（WS-02）+ DndContext（CV-02）
+import type * as React from 'react';
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
 import { useStore, NODE_DEFAULTS, DEVICES } from '../store';
 import { screenToBoard } from '../lib/coords';
+import { findContainerAt, absOrigin } from '../lib/tree';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
@@ -28,21 +30,46 @@ export function AppShell() {
       if (!el) return;
       // 松开位置 = 按下位置 + 拖拽位移（dnd-kit 的 delta）
       const act = e.activatorEvent as PointerEvent;
-      const zoom = useStore.getState().editor.zoom;
-      const p = screenToBoard(act.clientX + e.delta.x, act.clientY + e.delta.y, el, zoom);
+      const st = useStore.getState();
+      const zoom = st.editor.zoom;
+      const p = screenToBoard(act.clientX + e.delta.x, act.clientY + e.delta.y, el.getBoundingClientRect(), zoom);
       const meta = NODE_DEFAULTS[type];
-      const device = useStore.getState().editor.currentDevice;
+      const device = st.editor.currentDevice;
       const dev = DEVICES[device];
-      // 钳制在画板范围内（v0 防呆；W2 吸附系统替换）
+      const page = st.project.pages.find(pg => pg.id === st.editor.currentPageId) ?? st.project.pages[0];
+      const board = page.boards[device];
+
+      // CV-06 · 命中容器则挂到容器内（坐标换算到容器左上角）
+      const containerId = findContainerAt(board, p, new Set());
+      if (containerId) {
+        const o = absOrigin(board, containerId);
+        useStore.getState().actions.addNode(type, {
+          x: Math.round(p.x - o.x - meta.w / 2),
+          y: Math.round(p.y - o.y - meta.h / 2),
+          w: meta.w, h: meta.h,
+        }, containerId);
+        return;
+      }
+      // 根层：钳制在画板范围内
       const x = Math.min(Math.max(0, Math.round(p.x - meta.w / 2)), Math.max(0, dev.w - meta.w));
       const y = Math.min(Math.max(0, Math.round(p.y - meta.h / 2)), Math.max(0, dev.h - meta.h));
       useStore.getState().actions.addNode(type, { x, y, w: meta.w, h: meta.h });
     }
   }
 
+  // CV-03 · 快捷键：Delete 删除选中，Esc 取消选中
+  function onKeyDown(e: React.KeyboardEvent) {
+    const st = useStore.getState();
+    if (e.key === 'Escape') { st.actions.select([]); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
+      e.preventDefault();
+      st.actions.deleteNode(st.editor.selection[0]);
+    }
+  }
+
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#fafafa' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#fafafa' }} onKeyDown={onKeyDown}>
         {/* 顶栏 */}
         <header style={{
           height: 44, flexShrink: 0, display: 'flex', alignItems: 'center',
