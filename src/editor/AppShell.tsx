@@ -2,7 +2,8 @@
 import type * as React from 'react';
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
-import { useStore, NODE_DEFAULTS, DEVICES } from '../store';
+import { useStore, DEVICES } from '../store';
+import { REGISTRY_MAP } from '../modules/registry';
 import { screenToBoard } from '../lib/coords';
 import { findContainerAt, absOrigin } from '../lib/tree';
 import { LeftPanel } from './LeftPanel';
@@ -33,7 +34,7 @@ export function AppShell() {
       const st = useStore.getState();
       const zoom = st.editor.zoom;
       const p = screenToBoard(act.clientX + e.delta.x, act.clientY + e.delta.y, el.getBoundingClientRect(), zoom);
-      const meta = NODE_DEFAULTS[type];
+      const meta = REGISTRY_MAP[type];
       const device = st.editor.currentDevice;
       const dev = DEVICES[device];
       const page = st.project.pages.find(pg => pg.id === st.editor.currentPageId) ?? st.project.pages[0];
@@ -65,6 +66,12 @@ export function AppShell() {
     if (e.key === 'Escape') { st.actions.select([]); return; }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { st.actions.copySelection(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { st.actions.pasteClipboard(); return; }
+    // ST-02 · 撤销 / 重做
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) st.actions.redo(); else st.actions.undo();
+      return;
+    }
     if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
       e.preventDefault();
       st.actions.deleteNode(st.editor.selection[0]);
@@ -82,7 +89,15 @@ export function AppShell() {
           <b style={{ fontSize: 14 }}>界面搭建器</b>
           <span style={{ fontSize: 12, color: '#6b7280' }}>{projectName}</span>
           <span style={{ flex: 1 }} />
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>v0 Demo · W1</span>
+          <button
+            onClick={() => useStore.getState().actions.undo()}
+            style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 6, fontSize: 12, padding: '4px 10px', cursor: 'pointer' }}
+          >↩ 撤销</button>
+          <button
+            onClick={() => useStore.getState().actions.redo()}
+            style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 6, fontSize: 12, padding: '4px 10px', cursor: 'pointer' }}
+          >↪ 重做</button>
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>W3 · 30 模块</span>
         </header>
 
         {/* 三栏 */}
@@ -102,7 +117,7 @@ export function AppShell() {
             padding: '8px 14px', background: '#fff7ed', border: '1px dashed #f97316',
             borderRadius: 8, fontSize: 12, color: '#c2410c',
           }}>
-            {NODE_DEFAULTS[dragType]?.label ?? dragType}
+            {REGISTRY_MAP[dragType]?.label ?? dragType}
           </div>
         ) : null}
       </DragOverlay>

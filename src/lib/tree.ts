@@ -2,8 +2,8 @@
 import type { Point } from './coords';
 import type { Board, Node } from '../types';
 
-// v0 可作为容器的模块类型（LB 注册表 W3 扩展后由此统一管理）
-export const CONTAINER_TYPES = new Set(['card']);
+// 可作为容器的模块类型（与 LB-01 注册表 isContainer 对应）
+export const CONTAINER_TYPES = new Set(['card', 'group']);
 
 /** 节点在画板坐标系中的绝对左上角（沿父链累加） */
 export function absOrigin(board: Board, id: string): Point {

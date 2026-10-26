@@ -1,10 +1,11 @@
-// ST-01 · zustand + immer：project / editor 切片
-// history / ai 切片 W3/W4 再加
+// ST-01 + ST-02 · zustand + immer：project / editor / history 切片
+// 撤销采用整步快照（deep clone pages），上限 50 步；拖动 400ms 内合并为一步
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { uid } from '../lib/id';
 import { loadProject, saveProject } from '../lib/persist';
 import { subtreeIds } from '../lib/tree';
+import { REGISTRY_MAP } from '../modules/registry';
 import type { Board, DeviceId, Frame, Node, Page, Project } from '../types';
 
 export const DEVICES: Record<DeviceId, { label: string; w: number; h: number }> = {
@@ -41,19 +42,34 @@ function emptyProject(): Project {
   };
 }
 
+type PagesSnapshot = Page[];
+
+interface HistorySlice {
+  past: PagesSnapshot[];
+  future: PagesSnapshot[];
+  lastTag: string;      // 合并用：同一手势（如拖动）300ms 内只压一次栈
+  lastAt: number;
+}
+
 interface EditorSlice {
   currentPageId: string;
   currentDevice: DeviceId;
   selection: string[];
   zoom: number;
-  pan: { x: number; y: number };           // DV-03 · 画板在滚动区内的位置
-  clipboard: Array<{ rootId: string; subtree: Record<string, Node> }>;  // CV-03
+  pan: { x: number; y: number };
+  clipboard: Array<{ rootId: string; subtree: Record<string, Node> }>;
 }
 
 interface Actions {
+  pushHistory: (tag?: string) => void;
+  undo: () => void;
+  redo: () => void;
   addNode: (type: string, frame: Frame, parentId?: string) => void;
   moveNode: (id: string, x: number, y: number, newParentId?: string | null) => void;
   resizeNode: (id: string, frame: Frame) => void;
+  setProp: (id: string, key: string, value: unknown) => void;
+  setStyle: (id: string, key: string, value: string | number) => void;
+  setFrameField: (id: string, key: 'x' | 'y' | 'w' | 'h', value: number) => void;
   deleteNode: (id: string) => void;
   select: (ids: string[]) => void;
   copySelection: () => void;
@@ -65,12 +81,14 @@ interface Actions {
   addPage: () => void;
   renamePage: (id: string, name: string) => void;
   deletePage: (id: string) => void;
+  copyBoardFrom: (from: DeviceId) => void;
   hydrate: () => Promise<void>;
 }
 
 interface Store {
   project: Project;
   editor: EditorSlice;
+  history: HistorySlice;
   actions: Actions;
 }
 
@@ -80,7 +98,6 @@ function scheduleSave(p: Project) {
   saveTimer = setTimeout(() => void saveProject(p), 1000);
 }
 
-// 当前页/画板快捷获取（produce 草稿内用）
 function pick(draft: Project, pageId: string, device: DeviceId) {
   const page = draft.pages.find(pg => pg.id === pageId) ?? draft.pages[0];
   return { page, board: page.boards[device] };
@@ -92,14 +109,66 @@ export const useStore = create<Store>((set, get) => ({
     currentPageId: '', currentDevice: 'mobile',
     selection: [], zoom: 1, pan: { x: 24, y: 24 }, clipboard: [],
   },
+  history: { past: [], future: [], lastTag: '', lastAt: 0 },
 
   actions: {
-    // CV-02/06 · 拖入画布或容器：按落点创建节点
+    // ST-02 · 快照入栈（300ms 内同 tag 合并，拖动手势只算一步）
+    pushHistory: tag => {
+      const s = get();
+      const now = Date.now();
+      if (tag && tag === s.history.lastTag && now - s.history.lastAt < 400) {
+        set({ history: { ...s.history, lastAt: now } });
+        return;
+      }
+      set({
+        history: {
+          past: [...s.history.past.slice(-49), structuredClone(s.project.pages)],
+          future: [],
+          lastTag: tag ?? '',
+          lastAt: now,
+        },
+      });
+    },
+
+    undo: () => {
+      const s = get();
+      if (!s.history.past.length) return;
+      const prev = s.history.past[s.history.past.length - 1];
+      set({
+        project: { ...s.project, pages: structuredClone(prev) },
+        history: {
+          past: s.history.past.slice(0, -1),
+          future: [...s.history.future, structuredClone(s.project.pages)],
+          lastTag: '', lastAt: 0,
+        },
+        editor: { ...s.editor, selection: [] },
+      });
+      scheduleSave(get().project);
+    },
+
+    redo: () => {
+      const s = get();
+      if (!s.history.future.length) return;
+      const next = s.history.future[s.history.future.length - 1];
+      set({
+        project: { ...s.project, pages: structuredClone(next) },
+        history: {
+          past: [...s.history.past, structuredClone(s.project.pages)],
+          future: s.history.future.slice(0, -1),
+          lastTag: '', lastAt: 0,
+        },
+        editor: { ...s.editor, selection: [] },
+      });
+      scheduleSave(get().project);
+    },
+
+    // CV-02/06 · 拖入画布或容器
     addNode: (type, frame, parentId) => {
       const s = get();
+      s.actions.pushHistory('add');
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
-        const meta = NODE_DEFAULTS[type];
+        const meta = REGISTRY_MAP[type];
         const id = uid('n');
         const pid = parentId ?? board.rootId;
         const node: Node = {
@@ -119,9 +188,10 @@ export const useStore = create<Store>((set, get) => ({
       set({ project: p, editor: { ...s.editor, selection: [] } });
     },
 
-    // CV-04/06 · pointerup 提交位置；newParentId 不同则重挂载（进出容器）
+    // CV-04/06 · 提交位置；newParentId 不同则重挂载
     moveNode: (id, x, y, newParentId) => {
       const s = get();
+      s.actions.pushHistory('drag');
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
@@ -139,9 +209,10 @@ export const useStore = create<Store>((set, get) => ({
       set({ project: p });
     },
 
-    // CV-05 · pointerup 时提交最终尺寸与位置
+    // CV-05 · 提交尺寸
     resizeNode: (id, frame) => {
       const s = get();
+      s.actions.pushHistory('resize');
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
@@ -156,9 +227,47 @@ export const useStore = create<Store>((set, get) => ({
       set({ project: p });
     },
 
-    // CV-03 · 删除节点及其子树
+    // PP-02/03 · 属性面板写入
+    setProp: (id, key, value) => {
+      const s = get();
+      s.actions.pushHistory('prop');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.props[key] = value;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    setStyle: (id, key, value) => {
+      const s = get();
+      s.actions.pushHistory('style');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.style[key] = value;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    setFrameField: (id, key, value) => {
+      const s = get();
+      s.actions.pushHistory('frame');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.frame[key] = Math.round(value);
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // CV-03 · 删除子树
     deleteNode: id => {
       const s = get();
+      s.actions.pushHistory('delete');
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
@@ -180,7 +289,6 @@ export const useStore = create<Store>((set, get) => ({
 
     select: ids => set(s => ({ editor: { ...s.editor, selection: ids } })),
 
-    // CV-03 · 复制选中（含子树快照）
     copySelection: () => {
       const s = get();
       const page = s.project.pages.find(pg => pg.id === s.editor.currentPageId) ?? s.project.pages[0];
@@ -197,10 +305,10 @@ export const useStore = create<Store>((set, get) => ({
       set({ editor: { ...s.editor, clipboard } });
     },
 
-    // CV-03 · 粘贴：整子树重建 id，偏移 8px
     pasteClipboard: () => {
       const s = get();
       if (!s.editor.clipboard.length) return;
+      s.actions.pushHistory('paste');
       let newSel: string[] = [];
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
@@ -234,6 +342,7 @@ export const useStore = create<Store>((set, get) => ({
     // WS-04 · 页面管理
     addPage: () => {
       const s = get();
+      s.actions.pushHistory('page');
       const id = uid('pg');
       const p = produce(s.project, draft => {
         draft.pages.push({
@@ -258,6 +367,7 @@ export const useStore = create<Store>((set, get) => ({
     deletePage: id => {
       const s = get();
       if (s.project.pages.length <= 1) return;
+      s.actions.pushHistory('page-del');
       const p = produce(s.project, draft => {
         draft.pages = draft.pages.filter(pg => pg.id !== id);
       });
@@ -265,6 +375,21 @@ export const useStore = create<Store>((set, get) => ({
       const currentPageId = p.pages.some(pg => pg.id === s.editor.currentPageId)
         ? s.editor.currentPageId : p.pages[0].id;
       set({ project: p, editor: { ...s.editor, currentPageId, selection: [] } });
+    },
+
+    // DV-04 · 复制某设备画板设计到当前设备
+    copyBoardFrom: from => {
+      const s = get();
+      if (from === s.editor.currentDevice) return;
+      s.actions.pushHistory('copy-board');
+      const p = produce(s.project, draft => {
+        const { page, board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const src = page.boards[from];
+        board.nodes = JSON.parse(JSON.stringify(src.nodes));
+        board.rootId = src.rootId;
+      });
+      scheduleSave(p);
+      set({ project: p, editor: { ...s.editor, selection: [] } });
     },
 
     hydrate: async () => {
@@ -277,39 +402,3 @@ export const useStore = create<Store>((set, get) => ({
     },
   },
 }));
-
-// 模块默认值（v0 的 5 类；LB-01 注册表 W3 扩成完整注册表）
-export interface ModuleDefault {
-  label: string;
-  w: number; h: number;
-  props: Record<string, unknown>;
-  style: Record<string, string | number>;
-}
-export const NODE_DEFAULTS: Record<string, ModuleDefault> = {
-  'button-primary': {
-    label: '主按钮', w: 200, h: 48,
-    props: { label: '登录' },
-    style: { background: '#f97316', color: '#ffffff', radius: 8, fontSize: 16, fontWeight: 600 },
-  },
-  heading: {
-    label: '标题', w: 200, h: 34,
-    props: { text: '欢迎回来' },
-    style: { fontSize: 22, fontWeight: 700, color: '#1f2328' },
-  },
-  paragraph: {
-    label: '正文段落', w: 240, h: 48,
-    props: { text: '这里是一段说明文字。' },
-    style: { fontSize: 14, color: '#6b7280' },
-  },
-  input: {
-    label: '单行输入框', w: 260, h: 48,
-    props: { label: '手机号', placeholder: '请输入手机号' },
-    style: { radius: 8, border: '1px solid #e5e7eb', background: '#ffffff', fontSize: 14 },
-  },
-  card: {
-    label: '卡片', w: 280, h: 160,
-    props: {},
-    // 用 inset 阴影代替 border：避免 1px 边框让子节点坐标产生偏移（CV-06 纪律）
-    style: { background: '#ffffff', radius: 12, boxShadow: 'inset 0 0 0 1px #e5e7eb' },
-  },
-};
