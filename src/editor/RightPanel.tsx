@@ -37,20 +37,6 @@ function lastExportText(): string {
   return days === 0 ? '今天' : `${days} 天前`;
 }
 
-function clearBoard() {
-  const s = useStore.getState();
-  s.actions.pushHistory('clear');
-  const p = structuredClone(s.project);
-  const page = p.pages.find(pg => pg.id === s.editor.currentPageId) ?? p.pages[0];
-  const board = page.boards[s.editor.currentDevice];
-  const root = board.nodes[board.rootId];
-  root.children = [];
-  for (const id of Object.keys(board.nodes)) {
-    if (id !== board.rootId) delete board.nodes[id];
-  }
-  useStore.setState({ project: p, editor: { ...s.editor, selection: [] } });
-}
-
 type NodeT = NonNullable<ReturnType<typeof getSelNode>>;
 
 function Field({ def, node }: { def: FieldDef; node: NodeT }) {
@@ -383,7 +369,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
 {JSON.stringify(sel.events, null, 2)}
               </pre>
 
-              <button onClick={clearBoard} style={{ ...cardBtn, color: '#b91c1c', borderColor: '#fecaca' }}>
+              <button onClick={() => useStore.getState().actions.clearBoard()} style={{ ...cardBtn, color: '#b91c1c', borderColor: '#fecaca' }}>
                 清空当前画板
               </button>
               <div style={{ fontSize: 11, color: '#a8a199' }}>

@@ -77,6 +77,7 @@ interface Actions {
   setStyle: (id: string, key: string, value: string | number) => void;
   setFrameField: (id: string, key: 'x' | 'y' | 'w' | 'h', value: number) => void;
   deleteNode: (id: string) => void;
+  clearBoard: () => void;
   select: (ids: string[]) => void;
   copySelection: () => void;
   pasteClipboard: () => void;
@@ -307,6 +308,21 @@ export const useStore = create<Store>((set, get) => ({
           delete board.nodes[cur];
         }
       });
+      scheduleSave(p);
+      set({ project: p, editor: { ...s.editor, selection: [] } });
+    },
+
+    // 清空当前画板（保留 root，删除全部子节点），走持久化
+    clearBoard: () => {
+      const s = get();
+      s.actions.pushHistory('clear');
+      const p = structuredClone(s.project);
+      const page = p.pages.find(pg => pg.id === s.editor.currentPageId) ?? p.pages[0];
+      const board = page.boards[s.editor.currentDevice];
+      board.nodes[board.rootId].children = [];
+      for (const id of Object.keys(board.nodes)) {
+        if (id !== board.rootId) delete board.nodes[id];
+      }
       scheduleSave(p);
       set({ project: p, editor: { ...s.editor, selection: [] } });
     },
