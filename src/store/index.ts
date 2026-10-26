@@ -83,6 +83,9 @@ interface Actions {
   deletePage: (id: string) => void;
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
+  setNodeName: (id: string, name: string) => void;
+  setProjectName: (name: string) => void;
+  reorderNode: (id: string, to: 'front' | 'back' | 'forward' | 'backward') => void;
   importProject: (json: string) => boolean;
   hydrate: () => Promise<void>;
 }
@@ -402,6 +405,47 @@ export const useStore = create<Store>((set, get) => ({
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
         if (n) n[key] = value;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // PP-02 · 节点名称（图层名）
+    setNodeName: (id, name) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n && name.trim()) n.name = name.trim();
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // 项目名称（顶栏）
+    setProjectName: name => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        if (name.trim()) draft.name = name.trim();
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // PP-02/03 · 图层顺序：置顶/上移/下移/置底（兄弟之间）
+    reorderNode: (id, to) => {
+      const s = get();
+      s.actions.pushHistory('reorder');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (!n || !n.parentId) return;
+        const arr = board.nodes[n.parentId].children;
+        const i = arr.indexOf(id);
+        if (i < 0) return;
+        arr.splice(i, 1);
+        const j = to === 'front' ? arr.length : to === 'back' ? 0 : to === 'forward' ? Math.min(arr.length, i + 1) : Math.max(0, i - 1);
+        arr.splice(j, 0, id);
       });
       scheduleSave(p);
       set({ project: p });

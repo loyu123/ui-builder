@@ -195,7 +195,7 @@ export function RightPanel() {
   const count = Object.keys(board.nodes).length - 1;
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode } = useStore(s => s.actions);
 
   return (
     <aside style={panel}>
@@ -230,8 +230,20 @@ export function RightPanel() {
             <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div>
                 <span style={{ fontSize: 11, color: '#9ca3af' }}>选中：</span>
-                <b>{sel.name}</b>
-                <span style={{ fontSize: 10, color: '#c0c4cc', marginLeft: 6 }}>{sel.type}</span>
+                <span style={{ fontSize: 10, color: '#c0c4cc' }}>{sel.type}</span>
+                <input
+                  value={sel.name}
+                  onChange={e => setNodeName(sel.id, e.target.value)}
+                  style={{ ...fieldInputStyle(), marginTop: 4, fontWeight: 600 }}
+                />
+              </div>
+
+              {/* 图层顺序（PP-02） */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#9ca3af', width: 64 }}>图层顺序</span>
+                {([['front', '置顶'], ['forward', '上移'], ['backward', '下移'], ['back', '置底']] as const).map(([dir, label]) => (
+                  <button key={dir} onClick={() => reorderNode(sel.id, dir)} style={{ ...smallBtn, padding: '3px 7px', fontSize: 11 }}>{label}</button>
+                ))}
               </div>
 
               {/* 显隐 / 锁定（PP-03） */}

@@ -87,7 +87,13 @@ export function AppShell() {
           gap: 12, padding: '0 16px', background: '#ffffff', borderBottom: '1px solid #e5e7eb',
         }}>
           <b style={{ fontSize: 14 }}>界面搭建器</b>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>{projectName}</span>
+          <input
+            value={projectName}
+            onChange={e => useStore.getState().actions.setProjectName(e.target.value)}
+            style={{ border: '1px solid transparent', background: 'transparent', borderRadius: 6, padding: '3px 8px', fontSize: 12, color: '#6b7280', width: 160, outline: 'none' }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#fff'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
+          />
           <span style={{ flex: 1 }} />
           <button
             onClick={() => useStore.getState().actions.undo()}
