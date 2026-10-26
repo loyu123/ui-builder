@@ -108,6 +108,12 @@ export function Canvas() {
     }
     if (!node) return;
 
+    // PP-03 · 锁定节点：仅选中查看，不可拖动/缩放
+    if (node.locked) {
+      st.actions.select([node.id]);
+      return;
+    }
+
     // Shift 点击 → 加入/移出多选
     if (e.shiftKey) {
       const sel = st.editor.selection.includes(node.id)
@@ -269,6 +275,7 @@ export function Canvas() {
 
   // —— 渲染 ——（嵌套递归；子节点坐标相对父容器左上角）
   function renderNode(n: Node): React.ReactNode {
+    if (n.hidden) return null;   // PP-03 · 隐藏节点不渲染
     const frame = preview?.id === n.id ? preview.frame : n.frame;
     const selected = selection.includes(n.id) || preview?.id === n.id;
     const isDropTarget = dropTarget === n.id && gesture.current?.mode === 'move';

@@ -15,6 +15,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "idb-keyval": "^6.3.0",
     "immer": "^11.2.9",
+    "jszip": "^3.10.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zustand": "^5.0.16"

@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { uid } from '../lib/id';
-import { loadProject, saveProject } from '../lib/persist';
+import { loadProject, saveProject, migrate } from '../lib/persist';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
 import type { Board, DeviceId, Frame, Node, Page, Project } from '../types';
@@ -82,6 +82,8 @@ interface Actions {
   renamePage: (id: string, name: string) => void;
   deletePage: (id: string) => void;
   copyBoardFrom: (from: DeviceId) => void;
+  setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
+  importProject: (json: string) => boolean;
   hydrate: () => Promise<void>;
 }
 
@@ -390,6 +392,37 @@ export const useStore = create<Store>((set, get) => ({
       });
       scheduleSave(p);
       set({ project: p, editor: { ...s.editor, selection: [] } });
+    },
+
+    // PP-03 · 显隐 / 锁定
+    setNodeFlag: (id, key, value) => {
+      const s = get();
+      s.actions.pushHistory('flag');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n[key] = value;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // ST-05 · 导入 JSON（含校验与迁移；失败返回 false 不白屏）
+    importProject: json => {
+      try {
+        const raw = JSON.parse(json);
+        if (!raw || typeof raw !== 'object' || !Array.isArray(raw.pages)) return false;
+        const migrated = migrate(raw as Project);
+        set({
+          project: migrated,
+          editor: { ...get().editor, currentPageId: migrated.pages[0].id, selection: [] },
+        });
+        scheduleSave(get().project);
+        return true;
+      } catch (e) {
+        console.error('[import] 导入失败', e);
+        return false;
+      }
     },
 
     hydrate: async () => {

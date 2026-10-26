@@ -27,6 +27,8 @@ export interface Node {
   style: Record<string, string | number>;
   props: Record<string, unknown>;
   events: Record<string, EventSpec>;
+  locked?: boolean;          // PP-03 · 锁定：不可拖动/缩放，但可选中查看
+  hidden?: boolean;          // PP-03 · 隐藏：不渲染
 }
 
 export interface Board {
