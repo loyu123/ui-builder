@@ -1,6 +1,6 @@
 // 右栏 · C 方向「AI 设计助手」主视图 + 属性页签
 // AI：橙色大按钮 + 建议卡（应用/忽略）+ 统计条（页面/模块/画板）+ 操作记录 + 上次导出
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type * as React from 'react';
 import { useStore } from '../store';
 import { REGISTRY_MAP, type FieldDef } from '../modules/registry';
@@ -160,6 +160,8 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
       </button>
       <div style={{ fontSize: 11, color: '#a8a199', lineHeight: 1.6 }}>
         只给建议，不会直接改动你的设计；点「应用」才生效，可随时撤销。
+        <br />
+        要直接改模块：点选画布中的模块，右侧会自动切到「属性」；也可以在画布上直接拖动、缩放。
       </div>
 
       {suggestions && (
@@ -273,6 +275,14 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
   const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode } = useStore(s => s.actions);
   const [, force] = useState(0);
+
+  // 选中即编辑：点选画布模块时自动切到属性页签（手动切回助手后，选中新模块才会再切换）
+  const selId = selection.length === 1 ? selection[0] : null;
+  const lastSelRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (selId && selId !== lastSelRef.current) setTab('props');
+    lastSelRef.current = selId;
+  }, [selId]);
 
   if (previewing) return null;
 
