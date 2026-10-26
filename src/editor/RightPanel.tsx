@@ -273,7 +273,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos } = useStore(s => s.actions);
   const [, force] = useState(0);
 
   // 选中即编辑：点选画布模块时自动切到属性页签（手动切回助手后，选中新模块才会再切换）
@@ -354,6 +354,21 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
                       value={sel.frame[k]} onChange={e => setFrameField(sel.id, k, Number(e.target.value))} />
                   </div>
                 ))}
+              </div>
+
+              {/* 功能备注（核心需求：描述该模块在最终成果中的功能） */}
+              <div style={{ fontSize: 11, color: '#a8a199', marginTop: 4 }}>功能备注</div>
+              <textarea
+                placeholder="描述该模块在最终成果中所代表的功能，如：此按钮用于提交登录表单"
+                value={sel.note ?? ''}
+                onChange={e => setNodeNote(sel.id, e.target.value)}
+                style={{ ...fieldInputStyle(), height: 52, resize: 'vertical', fontFamily: 'inherit' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 64, fontSize: 11, color: '#8a8378', flexShrink: 0 }}>拖入位置</span>
+                <select style={fieldInputStyle()} value={sel.pos ?? '自动'} onChange={e => setNodePos(sel.id, e.target.value)}>
+                  {['自动', '页面顶部', '页面中部', '页面底部'].map(o => <option key={o}>{o}</option>)}
+                </select>
               </div>
 
               {meta.fields.length > 0 && (

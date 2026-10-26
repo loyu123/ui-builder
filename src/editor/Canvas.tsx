@@ -14,14 +14,23 @@ const MIN = 16;
 const ACCENT = '#f97316';
 
 interface Gesture {
-  mode: 'move' | 'resize' | 'marquee';
+  mode: 'move' | 'resize' | 'marquee' | 'pan';
   handle?: Handle;
   nodeId?: string;
   multiIds?: string[];                       // 多选整体移动
   startFrames?: Record<string, Frame>;
   startFrame: Frame;
   startPt: { x: number; y: number };
+  startPan?: { x: number; y: number };       // pan 手势用（屏幕像素）
+  startClient?: { x: number; y: number };
 }
+
+// 双击可改文字的模块：type → 文案所在 props 字段
+const EDITABLE_TEXT: Record<string, string> = {
+  heading: 'text', paragraph: 'text', 'button-primary': 'label', 'button-secondary': 'label',
+  link: 'label', topnav: 'title', 'list-item': 'title', notification: 'text', 'message-bubble': 'text',
+  'watch-list-row': 'text', 'watch-face': 'time', 'mobile-statusbar': 'time', stat: 'value',
+};
 
 export function Canvas({ previewing }: { previewing?: boolean }) {
   const device = useStore(s => s.editor.currentDevice);
@@ -44,6 +53,17 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [marquee, setMarquee] = useState<Frame | null>(null);
+  const [editing, setEditing] = useState<{ id: string; key: string; value: string } | null>(null);
+  const spaceDown = useRef(false);
+
+  // 空格平移（DV-03）：按住空格 + 拖动台面
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown.current = true; };
+    const up = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown.current = false; };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
 
   // DV-03 · 切设备时把画板居中
   useEffect(() => {
@@ -96,6 +116,17 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const st = useStore.getState();
+
+    // 空格平移：最高优先级（在台面空白处按住空格拖动）
+    if (mode === 'marquee' && spaceDown.current) {
+      gesture.current = {
+        mode: 'pan', startFrame: { x: 0, y: 0, w: 0, h: 0 },
+        startClient: { x: e.clientX, y: e.clientY },
+        startPan: { ...st.editor.pan },
+        startPt: { x: 0, y: 0 },
+      };
+      return;
+    }
 
     if (mode === 'marquee') {
       gesture.current = {
@@ -203,8 +234,16 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
       setDropTarget(findContainerAt(board, p, exclude));
       const snapped = applySnap(f, g.nodeId!, parentId);
       setPreview({ id: g.nodeId!, frame: snapped });
+    } else if (g.mode === 'pan' && g.startPan && g.startClient) {
+      // 屏幕像素直接平移（不除 zoom）
+      useStore.getState().actions.setPan({
+        x: g.startPan.x + (e.clientX - g.startClient.x),
+        y: g.startPan.y + (e.clientY - g.startClient.y),
+      });
+      return;
     } else {
       const h = g.handle!;
+      const ratio = g.startFrame.w / Math.max(1, g.startFrame.h);
       if (h.includes('e')) f.w = Math.max(MIN, g.startFrame.w + dx);
       if (h.includes('s')) f.h = Math.max(MIN, g.startFrame.h + dy);
       if (h.includes('w')) {
@@ -216,6 +255,16 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         const hgt = Math.max(MIN, g.startFrame.h - dy);
         f.y = g.startFrame.y + (g.startFrame.h - hgt);
         f.h = hgt;
+      }
+      // CV-05 · Shift 锁比例（仅角点手柄）
+      if (e.shiftKey && h.length === 2) {
+        if (h.includes('e') || h.includes('w')) {
+          f.h = Math.max(MIN, f.w / ratio);
+          if (h.includes('n')) f.y = g.startFrame.y + (g.startFrame.h - f.h);
+        } else {
+          f.w = Math.max(MIN, f.h * ratio);
+          if (h.includes('w')) f.x = g.startFrame.x + (g.startFrame.w - f.w);
+        }
       }
       setGuides({ v: [], h: [] });
       setPreview({ id: g.nodeId!, frame: f });
@@ -283,6 +332,11 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
       <div
         key={n.id}
         onPointerDown={e => beginGesture(e, 'move', n)}
+        onDoubleClick={e => {
+          e.stopPropagation();
+          const key = EDITABLE_TEXT[n.type];
+          if (key) setEditing({ id: n.id, key, value: String(n.props[key] ?? '') });
+        }}
         style={{
           position: 'absolute',
           left: frame.x, top: frame.y, width: frame.w, height: frame.h,
@@ -293,6 +347,37 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         }}
       >
         <ModuleRenderer node={n} />
+        {/* 功能备注气泡（PP-03） */}
+        {n.note && !previewing && (
+          <div style={{
+            position: 'absolute', bottom: 'calc(100% + 4px)', left: 0,
+            maxWidth: 240, background: '#2a3548', color: '#e6ebf2',
+            border: '1px solid #f97316', borderRadius: 8, padding: '4px 8px',
+            fontSize: 10, lineHeight: 1.5, zIndex: 20, pointerEvents: 'none',
+            boxShadow: '0 4px 14px rgba(0,0,0,.35)', whiteSpace: 'normal',
+          }}>
+            <b style={{ color: '#f97316' }}>备注：</b>{n.note}
+          </div>
+        )}
+        {/* 双击就地编辑文字（CV-03 补充） */}
+        {editing?.id === n.id && (
+          <input
+            autoFocus
+            value={editing.value}
+            onPointerDown={e => e.stopPropagation()}
+            onChange={e => setEditing({ ...editing, value: e.target.value })}
+            onBlur={() => { useStore.getState().actions.setProp(n.id, editing.key, editing.value); setEditing(null); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { useStore.getState().actions.setProp(n.id, editing.key, editing.value); setEditing(null); }
+              if (e.key === 'Escape') setEditing(null);
+            }}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', zIndex: 30,
+              border: '2px solid #f97316', borderRadius: 4, padding: '0 8px',
+              fontSize: 13, boxSizing: 'border-box', outline: 'none',
+            }}
+          />
+        )}
         {n.children.map(cid => board.nodes[cid] && renderNode(board.nodes[cid]))}
         {isDropTarget && (
           <div style={{

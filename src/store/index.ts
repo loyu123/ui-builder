@@ -89,6 +89,8 @@ interface Actions {
   deletePage: (id: string) => void;
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
+  setNodeNote: (id: string, note: string) => void;
+  setNodePos: (id: string, pos: string) => void;
   setNodeName: (id: string, name: string) => void;
   setProjectName: (name: string) => void;
   reorderNode: (id: string, to: 'front' | 'back' | 'forward' | 'backward') => void;
@@ -422,6 +424,29 @@ export const useStore = create<Store>((set, get) => ({
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
         const n = board.nodes[id];
         if (n) n[key] = value;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // PP-03 · 功能备注（该模块在最终成果中的功能描述）
+    setNodeNote: (id, note) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.note = note;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    setNodePos: (id, pos) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.pos = pos;
       });
       scheduleSave(p);
       set({ project: p });

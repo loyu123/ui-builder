@@ -29,6 +29,8 @@ export interface Node {
   events: Record<string, EventSpec>;
   locked?: boolean;          // PP-03 · 锁定：不可拖动/缩放，但可选中查看
   hidden?: boolean;          // PP-03 · 隐藏：不渲染
+  note?: string;             // 功能备注：该模块在最终成果中代表的功能
+  pos?: string;              // 拖入位置标注（页面顶部/中部/底部/自动）
 }
 
 export interface Board {
