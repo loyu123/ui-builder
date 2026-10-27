@@ -93,7 +93,6 @@ function ModuleTile({ type }: { type: string }) {
 const PALETTE = REGISTRY.filter(m => m.palette !== false);
 
 export function LeftPanel({ previewing }: { previewing?: boolean }) {
-  if (previewing) return null;
   const pages = useStore(s => s.project.pages);
   const currentPageId = useStore(s => s.editor.currentPageId);
   const device = useStore(s => s.editor.currentDevice);
@@ -101,6 +100,8 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
   const { setPage, addPage, renamePage, deletePage } = useStore(s => s.actions);
   const devW = DEVICES[device].w;
+
+  if (previewing) return null;   // hooks 之后才允许条件 return（rules-of-hooks）
 
   const filtered = PALETTE.filter(m => !kw || m.label.includes(kw) || m.type.includes(kw));
   const categories = [...new Set(filtered.map(m => m.category))];

@@ -63,6 +63,7 @@ src/
 - **AI:** v1 is a local rule engine (5 rules). `.env` reserves a remote AI gateway (embed/rerank); without it, rules-only. Applied suggestions go through the shared undo stack.
 - **Error handling:** `ErrorBoundary` wraps the app so render failures do not white-screen; provides refresh / clear-cache actions (clears IndexedDB for a full reset).
 - **Export stack:** generated `web/` uses React 19 aligned with the editor; the contrast rule uses WCAG luminance with per-channel hex parsing. Multi-page designs export with a hash router; `navigate` events targeting a project page emit real `location.hash` jumps, other actions stay as stubs. Event binding (action/target/note) and theme tokens (colors / radius / font) are editable in the right panel.
+- **Rotation & snapping:** node rotation (`0–359°`) is a visual transform; snapping, marquee hit-testing and AI alignment rules still work on the **unrotated axis-aligned bounding box**, so a rotated module may snap by its outer frame. Preview mode is read-only for editing gestures but interactive for forms and `navigate` jumps.
 
 ## Roadmap
 
