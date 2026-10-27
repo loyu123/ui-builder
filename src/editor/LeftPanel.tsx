@@ -16,6 +16,8 @@ function LayerRow({ id, board, depth }: { id: string; board: Board; depth: numbe
   return (
     <>
       <div
+        role="button"
+        aria-selected={selected}
         onClick={() => select([id])}
         style={{
           display: 'flex', alignItems: 'center', gap: 5,

@@ -344,6 +344,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     return (
       <div
         key={n.id}
+        aria-selected={selected}
         onPointerDown={e => beginGesture(e, 'move', n)}
         onClick={e => {
           // 预览互动：navigate 事件真实切换预览页

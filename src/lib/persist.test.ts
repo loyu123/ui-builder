@@ -15,7 +15,6 @@ describe('lib/persist · IndexedDB 往返（fake-indexeddb）', () => {
   it('save → load 往返还原项目（含模块与事件）', async () => {
     const p = createEmptyProject();
     p.name = '持久化测试';
-    p.pages[0].boards.mobile.nodes;
     await saveProject(p);
     const loaded = await loadProject();
     expect(loaded).not.toBeNull();
