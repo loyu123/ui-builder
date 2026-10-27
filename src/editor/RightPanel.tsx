@@ -107,8 +107,6 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
   const theme = useStore(s => s.project.theme);
   const updateTheme = useStore(s => s.actions.updateTheme);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
-  const [ignored, setIgnored] = useState<Set<string>>(new Set());
-  const [checked, setChecked] = useState<{ total: number; pass: number } | null>(null);
   const [applied, setApplied] = useState(0);
   const [aiTick, setAiTick] = useState(0);
   const { pushHistory, setStyle } = useStore(s => s.actions);
@@ -118,9 +116,7 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
 
   function optimize() {
     setAiTick(t => t + 1);
-    const list = runRules(board).filter(s => !ignored.has(s.id));
-    setSuggestions(list);
-    setChecked({ total: list.length + 9, pass: 9 });   // 展示语义：检查 12 项，通过 9 项（规则集基准）
+    setSuggestions(runRules(board));
   }
 
   function apply(s: Suggestion) {
@@ -166,11 +162,18 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
         要直接改模块：点选画布中的模块，右侧会自动切到「属性」；也可以在画布上直接拖动、缩放。
       </div>
 
-      {suggestions && (
+      {suggestions && suggestions.length === 0 && (
+        <div style={{ border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#166534', borderRadius: 10, padding: 10, fontSize: 12, lineHeight: 1.6 }}>
+          ✓ 检查完成，当前画板没有发现可优化项。
+          <div style={{ fontSize: 11, color: '#4d7c0f', marginTop: 4 }}>
+            各规则触发条件：对齐需同层 ≥2 个模块 · 等距需 ≥3 个 · 对比度需模块同时设置文字色和背景色 · 字号层级需出现 4 种以上字号 · 文案溢出需文字估算宽超出模块 15%。
+          </div>
+        </div>
+      )}
+      {suggestions && suggestions.length > 0 && (
         <>
           <div style={{ fontSize: 12, color: '#6b7280' }}>
-            本次 {suggestions.length} 条建议
-            {checked && <span style={{ color: '#c9c2b6' }}>（检查 {checked.total} 项 · 通过 {checked.pass} 项）</span>}
+            本次 {suggestions.length} 条建议（共检查 5 类规则）
           </div>
           {suggestions.map(s => (
             <div key={s.id} style={{ border: '1px solid #ece7dd', borderRadius: 10, padding: 10, background: '#fff' }}>
@@ -190,7 +193,7 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
                 {s.patches.length > 0 ? (
                   <>
                     <button onClick={() => apply(s)} style={{ ...cardBtn, background: '#f97316', color: '#fff', borderColor: '#f97316' }}>应用</button>
-                    <button onClick={() => { setIgnored(v => new Set(v).add(s.id)); setSuggestions(prev => (prev ?? []).filter(x => x.id !== s.id)); }}
+                    <button onClick={() => setSuggestions(prev => (prev ?? []).filter(x => x.id !== s.id))}
                       style={cardBtn}>忽略</button>
                   </>
                 ) : (
