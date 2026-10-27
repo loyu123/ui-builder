@@ -202,6 +202,60 @@ describe('W5 回归 · 30 模块增删', () => {
     expect(board().nodes[id].rotation).toBe(270);
   });
 
+  it('P1-3.2 · copyBoardFrom 同源 device 为 no-op（project 引用不变）', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 1, y: 1, w: 100, h: 30 });
+    const before = useStore.getState().project;
+    a.copyBoardFrom('mobile');   // 当前设备即 mobile
+    expect(useStore.getState().project).toBe(before);
+  });
+
+  it('P1-3.2 · deletePage 仅剩一页时拒绝', () => {
+    const a = useStore.getState().actions;
+    const before = useStore.getState().project;
+    a.deletePage(useStore.getState().project.pages[0].id);
+    expect(useStore.getState().project).toBe(before);
+    expect(useStore.getState().project.pages.length).toBe(1);
+  });
+
+  it('P1-3.2 · reorderNode 已在顶端 back / 已在底端 front 均安全', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 1, y: 1, w: 100, h: 30 });
+    a.addNode('heading', { x: 1, y: 40, w: 100, h: 30 });
+    const board0 = () => {
+      const s = useStore.getState();
+      const pg = s.project.pages[0];
+      return pg.boards.mobile;
+    };
+    const root = board0().rootId;
+    const kids = board0().nodes[root].children;
+    a.reorderNode(kids[0], 'back');    // 已在最底
+    expect(board0().nodes[root].children).toEqual(kids);
+    a.reorderNode(kids[1], 'front');   // 已在最顶
+    expect(board0().nodes[root].children).toEqual(kids);
+  });
+
+  it('P1-3.2 · clearBoard 后画板仅剩 root 且选择清空', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 1, y: 1, w: 100, h: 30 });
+    a.addNode('heading', { x: 1, y: 40, w: 100, h: 30 });
+    a.clearBoard();
+    const b = useStore.getState().project.pages[0].boards.mobile;
+    expect(Object.keys(b.nodes)).toEqual([b.rootId]);
+    expect(useStore.getState().editor.selection).toEqual([]);
+  });
+
+  it('P1-3.2 · alignSelection 单选时 no-op', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 10, y: 10, w: 100, h: 30 });
+    const id = useStore.getState().project.pages[0].boards.mobile.rootId;
+    const kid = useStore.getState().project.pages[0].boards.mobile.nodes[id].children[0];
+    a.select([kid]);
+    const before = useStore.getState().project;
+    a.alignSelection('left');
+    expect(useStore.getState().project).toBe(before);
+  });
+
   it('性能冒烟：200 节点增删不超时（数据层）', () => {    const a = useStore.getState().actions;
     const t0 = Date.now();
     for (let i = 0; i < 200; i++) {
