@@ -40,22 +40,26 @@ npm run build      # 生产构建
 ```
 src/
 ├─ types.ts            # 数据模型（Node/Board/Page/Project）+ 运行时校验（isProject/isValidProject）
-├─ lib/                # coords（坐标换算）/ tree（容器命中）/ persist（持久化+迁移+clearAll）/ id / aiClient
-├─ store/              # zustand 切片：project / editor / history / actions（types 集中定义）
+├─ lib/                # coords / tree（容器命中）/ snap（吸附纯函数）/ persist（持久化+迁移+clearAll）/ id / aiClient
+├─ store/              # zustand 切片：index（组合）/ project / editor / history / actions / types / demo（示例项目）
 ├─ modules/            # registry.ts（30 模块唯一元数据源 + 容器单源）+ renderers.tsx（编辑/预览双态）
 ├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ErrorBoundary
+│  └─ right/           # AiPanel / PropsPanel / shared（右栏拆分）
 ├─ ai/engine.ts        # 规则建议引擎
 └─ exporter/           # React 工程 zip 生成器（slug 唯一命名 + 多页路由）
 ```
 
 ## 测试
 
-共 **34 条**（`npm test`）：
+共 **54 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
+- `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
+- `src/lib/tree.test.ts` — 树工具 6 条（最深容器命中/空白/exclude/防自嵌套/子树集合/绝对原点）
+- `src/lib/persist.test.ts` — IndexedDB 4 条（往返/空库/v1→v2 迁移/clearAll，fake-indexeddb）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）
-- `src/store/store.test.ts` — store 回归 12 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、性能冒烟）
-- `src/exporter/exporter.test.ts` — 导出端到端 6 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/TSX 引用/slug 唯一化与多页路由）
+- `src/store/store.test.ts` — store 回归 17 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、边界用例、性能冒烟）
+- `src/exporter/exporter.test.ts` — 导出端到端 7 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/TSX 引用/slug 唯一化与多页路由，另 1 条为落盘验收）
 - `src/exporter/guard.test.ts` — 漂移守卫 2 条（模板 props ⊆ 注册表；事件 key 拼法）
 - `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（双页 + navigate 场景，供人工解压做真实构建验收）
 
@@ -83,7 +87,12 @@ src/
 ## 覆盖率
 
 运行 `npm run test:coverage`（v8 provider，仅统计核心逻辑：lib / store / ai / exporter / types）。
-基线（2026-10-27）：**exporter 97% · ai/engine 96% · history/project/index 94~100% · persist 85% · store actions 67% · lib 整体 53%（tree.ts 容器命中路径待补）**；UI 组件不计入门禁。
+基线（2026-10-27，tree/actions 补测后）：**exporter 97% · ai/engine 96% · lib 整体 71%（tree.ts/snap.ts 100% 行覆盖）· store/actions 69%**；UI 组件不计入门禁。
+
+## 贡献约定
+
+提交信息格式：`<type>(<scope>): <摘要>`；类型 feat | fix | refactor | perf | test | docs | chore | ci，范围 canvas | store | exporter | ai | editor | docs | ci。
+PR 由 ci.yml 跑 lint + test + build；main 推送由 pages.yml 部署 GitHub Pages；coverage 仅本地 `npm run test:coverage`，不作为 CI 门禁。
 
 ## License
 
