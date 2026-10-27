@@ -2,6 +2,7 @@
 // 渲染器与导出模板是双份实现，此测试保证模板引用的 props 键不会悄悄偏离注册表定义。
 import { describe, it, expect } from 'vitest';
 import { REGISTRY, type FieldDef } from '../modules/registry';
+import { COMPONENT_BODIES } from './templates';
 import { componentBody, collectActions } from './exporter';
 import type { Project } from '../types';
 
@@ -35,6 +36,17 @@ describe('B2 · 导出模板与注册表字段一致性守卫', () => {
       }
     }
     expect(problems, problems.join('\n')).toEqual([]);
+  });
+
+  it('P1-16 表驱动完整性：registry 每个非 page 模块都有显式模板（不落 default 兜底）', () => {
+    const missing = REGISTRY.filter(m => m.type !== 'page' && !COMPONENT_BODIES[m.type]).map(m => m.type);
+    expect(missing, `缺少模板: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('P1-16 表无陈旧键：COMPONENT_BODIES 的键都在 registry 中', () => {
+    const known = new Set(REGISTRY.map(m => m.type));
+    const stale = Object.keys(COMPONENT_BODIES).filter(k => !known.has(k));
+    expect(stale, `陈旧键: ${stale.join(', ')}`).toEqual([]);
   });
 
   it('collectActions 的 key 拼法与页面 TSX 的 fire() 调用一致（ev_action_target）', () => {
