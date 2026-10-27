@@ -80,6 +80,11 @@ src/
 
 见 [DEMO.md](./DEMO.md)（5 分钟演示）。
 
+## 覆盖率
+
+运行 `npm run test:coverage`（v8 provider，仅统计核心逻辑：lib / store / ai / exporter / types）。
+基线（2026-10-27）：**exporter 97% · ai/engine 96% · history/project/index 94~100% · persist 85% · store actions 67% · lib 整体 53%（tree.ts 容器命中路径待补）**；UI 组件不计入门禁。
+
 ## License
 
 [MIT](./LICENSE) © 2026 loyu123

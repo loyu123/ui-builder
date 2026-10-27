@@ -78,6 +78,11 @@ src/
 
 See [DEMO.md](./DEMO.md) (Chinese) for a 5-minute walkthrough.
 
+## Coverage
+
+Run `npm run test:coverage` (v8 provider, core logic only: lib / store / ai / exporter / types).
+Baseline (2026-10-27): **exporter 97% · ai/engine 96% · history/project/index 94-100% · persist 85% · store actions 67% · lib overall 53% (tree.ts container-hit paths pending)**. UI components are excluded from the gate.
+
 ## License
 
 [MIT](./LICENSE) © 2026 loyu123
