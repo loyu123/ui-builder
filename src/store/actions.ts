@@ -378,26 +378,25 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       set({ project: p });
     },
 
-    // ST-05 · 导入 JSON（含校验与迁移；失败返回 false 不白屏）
+    // ST-05 · 导入 JSON（含校验与迁移；失败返回可读原因，成功返回 null）
     importProject: json => {
       try {
         const raw = JSON.parse(json);
-        if (!isProject(raw)) return false;
+        if (!isProject(raw)) return '文件缺少必要字段（pages / theme / schemaVersion）';
         const migrated = migrate(raw);
         // ST-05 · 深校验：结构损坏（父子断裂/root 丢失）直接拒绝，不进 store 不落盘
         if (!isValidProject(migrated)) {
           console.error('[import] 导入失败：项目结构校验未通过');
-          return false;
+          return '项目结构校验未通过：画板 root 缺失，或模块父子关系断裂';
         }
         set({
           project: migrated,
           editor: { ...get().editor, currentPageId: migrated.pages[0].id, selection: [] },
         });
         scheduleSave(get().project);
-        return true;
-      } catch (e) {
-        console.error('[import] 导入失败', e);
-        return false;
+        return null;
+      } catch {
+        return '不是合法的 JSON 文本';
       }
     },
 

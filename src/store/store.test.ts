@@ -131,13 +131,13 @@ describe('W5 回归 · 30 模块增删', () => {
     expect(countModules()).toBe(0);   // 新页面也是空的
   });
 
-  it('ST-05：导入非法 JSON 返回 false，合法 JSON 完整替换', () => {
+  it('ST-05：导入非法 JSON 返回可读原因，合法 JSON 完整替换', () => {
     const a = useStore.getState().actions;
-    expect(a.importProject('not-json')).toBe(false);
+    expect(a.importProject('not-json')).toBe('不是合法的 JSON 文本');
     a.addNode('button-primary', { x: 1, y: 1, w: 200, h: 48 });
     const exported = JSON.parse(JSON.stringify(useStore.getState().project));
     exported.name = '导入的项目';
-    expect(a.importProject(JSON.stringify(exported))).toBe(true);
+    expect(a.importProject(JSON.stringify(exported))).toBeNull();
     expect(useStore.getState().project.name).toBe('导入的项目');
     expect(countModules()).toBe(1);
   });
@@ -152,9 +152,26 @@ describe('W5 回归 · 30 模块增删', () => {
     const mobile = broken.pages[0].boards.mobile;
     const btnId = Object.keys(mobile.nodes).find(id => mobile.nodes[id].type === 'button-primary')!;
     mobile.nodes[mobile.rootId].children = mobile.nodes[mobile.rootId].children.filter((c: string) => c !== btnId);
-    expect(a.importProject(JSON.stringify(broken))).toBe(false);
+    expect(a.importProject(JSON.stringify(broken))).toBe('项目结构校验未通过：画板 root 缺失，或模块父子关系断裂');
     expect(useStore.getState().project.name).toBe(nameBefore);   // 未被覆盖
     expect(countModules()).toBe(1);
+  });
+
+  it('P1-07：分级快照——页面级操作全量可撤销，board 级操作只影响所在画板', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 10, y: 10, w: 200, h: 34 });   // board 粒度快照
+    const p1 = useStore.getState().project.pages[0].id;
+    a.addPage();                                              // full 快照
+    expect(useStore.getState().project.pages.length).toBe(2);
+    a.undo();                                                 // 回到单页
+    expect(useStore.getState().project.pages.length).toBe(1);
+    a.undo();                                                 // 撤销拖入
+    const b1 = useStore.getState().project.pages[0].boards.mobile;
+    expect(b1.nodes[b1.rootId].children.length).toBe(0);
+    a.redo();                                                 // 重做拖入（full/board 混合栈）
+    const b1r = useStore.getState().project.pages[0].boards.mobile;
+    expect(b1r.nodes[b1r.rootId].children.length).toBe(1);
+    expect(useStore.getState().project.pages[0].id).toBe(p1);
   });
 
   it('P2-10/11：事件绑定编辑与主题令牌更新（未动字段保留）', () => {

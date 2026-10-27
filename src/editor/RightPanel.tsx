@@ -36,8 +36,8 @@ function exportJson() {
 function importJson(file: File) {
   const reader = new FileReader();
   reader.onload = () => {
-    const ok = useStore.getState().actions.importProject(String(reader.result));
-    window.alert(ok ? '导入成功' : '导入失败：文件不是合法的项目 JSON');
+    const err = useStore.getState().actions.importProject(String(reader.result));
+    window.alert(err ? `导入失败：${err}` : '导入成功');
   };
   reader.readAsText(file);
 }

@@ -1,12 +1,13 @@
 // 中间画布 · DV-01 设备画板 + CV-01 嵌套渲染 + CV-04 吸附 + CV-05 缩放手柄
 // + CV-06 容器进出 + CV-03 框选/多选移动 + DV-03 缩放平移
 import type * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { DEVICES, useStore } from '../store';
 import { screenToBoard, snapThreshold } from '../lib/coords';
 import { absOrigin, findContainerAt, subtreeIds } from '../lib/tree';
 import { ModuleRenderer } from '../modules/renderers';
+const MemoModuleRenderer = memo(ModuleRenderer);   // P1-08 · node 引用不变即跳过重渲染（immer 结构共享）
 import type { Frame, Node } from '../types';
 
 type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -366,7 +367,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           cursor: 'grab',
         }}
       >
-        <ModuleRenderer node={n} interactive={previewing} />
+        <MemoModuleRenderer node={n} interactive={previewing} />
         {/* 功能备注气泡（PP-03） */}
         {n.note && !previewing && (
           <div style={{

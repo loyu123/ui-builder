@@ -46,7 +46,7 @@ src/
 
 ## Tests
 
-**33 tests** (`npm test`):
+**34 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (align / spacing / contrast / hierarchy / length, incl. WCAG channel parsing)

@@ -1,11 +1,16 @@
 // store 切片类型定义（B1 拆分）：状态切片与动作接口集中在此，避免循环依赖
-import type { DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
+import type { Board, DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
 
 export type PagesSnapshot = Page[];
 
+// P1-07 · 快照策略：页面级操作全量拍 pages；其余只拍当前画板，三设备多页时内存大幅下降
+export type HistorySnap =
+  | { kind: 'full'; pages: PagesSnapshot }
+  | { kind: 'board'; pageId: string; device: DeviceId; board: Board };
+
 export interface HistorySlice {
-  past: PagesSnapshot[];
-  future: PagesSnapshot[];
+  past: HistorySnap[];
+  future: HistorySnap[];
   lastTag: string;      // 合并用：同一手势（如拖动）400ms 内只压一次栈
   lastAt: number;
   log: string[];        // AI 助手"操作记录"（最近 6 条标签）
@@ -56,7 +61,7 @@ export interface Actions {
   setNodeName: (id: string, name: string) => void;
   setProjectName: (name: string) => void;
   reorderNode: (id: string, to: 'front' | 'back' | 'forward' | 'backward') => void;
-  importProject: (json: string) => boolean;
+  importProject: (json: string) => string | null;   // 成功返回 null，失败返回可读原因
   hydrate: () => Promise<void>;
 }
 
