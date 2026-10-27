@@ -14,4 +14,5 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - run: npm run test:coverage   # 报告型：输出覆盖率，不设门禁
       - run: npm run build

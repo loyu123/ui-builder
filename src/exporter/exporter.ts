@@ -339,6 +339,11 @@ cd web && npm install && npm run dev
 - \`backend/\` 后端占位（S1 默认不含骨架）
 - \`scripts/dev.sh\` 一键启动
 - \`scripts/verify.sh\` 导出回归：安装→类型检查→构建
+
+## 多页路由与事件
+- 多页设计自动生成 **hash 路由**（\`web/src/App.tsx\`）：首页 \`/#/\`，其余页 \`/#/页面slug小写\`
+- 编辑器里绑定了「跳转页面」事件的模块，导出后点击会**真实切换页面**（\`window.location.hash\`）
+- 其余事件动作（提交/绑定接口等）是接口位：在 \`web/src/events/actions.ts\` 对应 case 中实现真实行为并返回 \`true\`
 `);
   f('.gitignore', 'node_modules/\ndist/\n*.local\n');
   f('docker-compose.yml',
