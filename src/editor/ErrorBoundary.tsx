@@ -1,5 +1,6 @@
 // WS-05 · 错误边界：渲染异常不白屏，提供刷新/清缓存出口
 import { Component, type ReactNode } from 'react';
+import { clearAll } from '../lib/persist';
 
 interface State { error: Error | null }
 
@@ -34,7 +35,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
               style={{ border: 'none', background: '#f97316', color: '#fff', borderRadius: 8, padding: '8px 20px', fontSize: 13, cursor: 'pointer' }}>
               刷新页面
             </button>
-            <button onClick={() => { localStorage.clear(); window.location.reload(); }}
+            <button onClick={() => { void clearAll().then(() => window.location.reload()); }}
               style={{ border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', borderRadius: 8, padding: '8px 20px', fontSize: 13, cursor: 'pointer' }}>
               清空缓存并重置
             </button>

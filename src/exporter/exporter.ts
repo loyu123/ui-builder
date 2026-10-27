@@ -106,10 +106,18 @@ function emitNode(node: Node, board: Board, indent: string, used: Set<string>): 
   return self;
 }
 
-// 页面文件夹名：保留中文等可读字符，仅替换文件系统非法字符
-const folderOf = (name: string) => name.replace(/[\\/:*?"<>|]/g, '').trim() || 'Page';
+// 页面组件名（ASCII slug）：pascal 会把纯中文页名清空，故独立回退 Page；
+// 同名页按出现顺序追加序号，保证组件名/文件夹名全局唯一
+function pageSlug(name: string, used: Set<string>): string {
+  const base = name.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1)).join('') || 'Page';
+  let out = base, i = 2;
+  while (used.has(out)) out = `${base}${i++}`;
+  used.add(out);
+  return out;
+}
 
-function pageTsx(page: Page, device: DeviceId): string {
+function pageTsx(page: Page, device: DeviceId, slug: string): string {
   const board: Board = page.boards[device];
   const used = new Set<string>();
   const root = board.nodes[board.rootId];
@@ -120,7 +128,7 @@ function pageTsx(page: Page, device: DeviceId): string {
   return `${imports ? imports + '\n\n' : ''}import { fire } from "../../events/actions";
 
 // ${page.name} · ${device} 画板（由界面搭建器导出；手工修改前请先了解 data/pages.json 可再生成）
-export default function ${pascal(page.name) || 'Page'}${dev}() {
+export default function ${slug}${dev}() {
   return (
     <div style={{ position: "relative", width: ${board.frame.w}, height: ${board.frame.h}, background: "${root.style.background ?? '#ffffff'}", overflow: "hidden" }}>
 ${children}
@@ -205,13 +213,18 @@ ${actions.map(k => `    case '${k}':\n      console.info('[action] ${k} — 待�
 }
 `);
 
-  // 页面（每页 × 每设备）
+  // 页面（每页 × 每设备）；文件夹名 = 组件 slug（ASCII 稳定，同名页已唯一化）
+  const pageNames = new Map<string, string>();
+  const slugUsed = new Set<string>();
   for (const pg of project.pages) {
-    const folder = folderOf(pg.name);
+    pageNames.set(pg.id, pageSlug(pg.name, slugUsed));
+  }
+  for (const pg of project.pages) {
+    const slug = pageNames.get(pg.id)!;
     for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
-      f(`web/src/pages/${folder}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device));
+      f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device, slug));
     }
-    f(`web/src/pages/${folder}/index.tsx`,
+    f(`web/src/pages/${slug}/index.tsx`,
 `import Mobile from './Mobile';
 export default Mobile;
 `);
@@ -232,11 +245,11 @@ html, body, #root { height: 100%; margin: 0; }
 body { font-family: var(--font-base); font-size: var(--font-size-base); }
 `);
   f('web/src/App.tsx',
-`import ${pascal(project.pages[0].name) || 'Page'} from './pages/${folderOf(project.pages[0].name)}';
+`import ${pageNames.get(project.pages[0].id)} from './pages/${pageNames.get(project.pages[0].id)}';
 
 export default function App() {
   // v1 单页入口；多页路由在接口位（fire('onClick_navigate_xxx')）接入后扩展
-  return <${pascal(project.pages[0].name) || 'Page'} />;
+  return <${pageNames.get(project.pages[0].id)} />;
 }
 `);
   f('web/src/main.tsx',

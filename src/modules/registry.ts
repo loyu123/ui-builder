@@ -232,3 +232,9 @@ export const REGISTRY_MAP: Record<string, ModuleDef> = Object.fromEntries(
 );
 
 export const CATEGORIES = [...new Set(REGISTRY.filter(m => m.palette !== false).map(m => m.category))];
+
+// 容器类型单源（tree.ts 命中测试用）：从注册表 isContainer 派生。
+// 排除 page（画板根），根不参与"拖入哪个容器"的命中测试。
+export const CONTAINER_TYPES = new Set(
+  REGISTRY.filter(m => m.isContainer && m.type !== 'page').map(m => m.type),
+);

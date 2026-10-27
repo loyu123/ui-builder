@@ -1,5 +1,5 @@
 // ST-03 + ST-04 · IndexedDB 持久化（idb-keyval）+ schema 版本迁移链
-import { get, set } from 'idb-keyval';
+import { get, set, del } from 'idb-keyval';
 import type { Page, Project } from '../types';
 
 const KEY = 'ui-builder:current-project';
@@ -59,5 +59,21 @@ export async function loadProject(): Promise<Project | null> {
   } catch (e) {
     console.error('[persist] 读取失败', e);
     return null;
+  }
+}
+
+// 清空本地全部持久化数据（ErrorBoundary「清空缓存并重置」用）：
+// 项目主键 + 迁移备份 + localStorage 标记，reload 后回到全新项目
+export async function clearAll(): Promise<void> {
+  try {
+    await del(KEY);
+    await del(BACKUP_KEY);
+  } catch (e) {
+    console.error('[persist] 清空失败', e);
+  }
+  try {
+    localStorage.removeItem('ub-last-export');
+  } catch {
+    /* 无 localStorage 环境忽略 */
   }
 }

@@ -7,6 +7,7 @@ import { loadProject, saveProject, migrate } from '../lib/persist';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
 import type { Board, DeviceId, Frame, Node, Page, Project } from '../types';
+import { isProject, isValidProject } from '../types';
 
 export const DEVICES: Record<DeviceId, { label: string; w: number; h: number }> = {
   desktop: { label: '电脑', w: 1440, h: 900 },
@@ -513,8 +514,13 @@ export const useStore = create<Store>((set, get) => ({
     importProject: json => {
       try {
         const raw = JSON.parse(json);
-        if (!raw || typeof raw !== 'object' || !Array.isArray(raw.pages)) return false;
-        const migrated = migrate(raw as Project);
+        if (!isProject(raw)) return false;
+        const migrated = migrate(raw);
+        // ST-05 · 深校验：结构损坏（父子断裂/root 丢失）直接拒绝，不进 store 不落盘
+        if (!isValidProject(migrated)) {
+          console.error('[import] 导入失败：项目结构校验未通过');
+          return false;
+        }
         set({
           project: migrated,
           editor: { ...get().editor, currentPageId: migrated.pages[0].id, selection: [] },

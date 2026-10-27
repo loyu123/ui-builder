@@ -142,6 +142,21 @@ describe('W5 回归 · 30 模块增删', () => {
     expect(countModules()).toBe(1);
   });
 
+  it('ST-05：结构损坏的 JSON（父子断裂）被深校验拒绝且不覆盖当前项目', () => {
+    const a = useStore.getState().actions;
+    a.addNode('button-primary', { x: 1, y: 1, w: 200, h: 48 });
+    const nameBefore = useStore.getState().project.name;
+    const broken = JSON.parse(JSON.stringify(useStore.getState().project));
+    broken.name = '损坏的项目';
+    // 把按钮从 root 的 children 里删掉但保留其 parentId → 双向关系断裂
+    const mobile = broken.pages[0].boards.mobile;
+    const btnId = Object.keys(mobile.nodes).find(id => mobile.nodes[id].type === 'button-primary')!;
+    mobile.nodes[mobile.rootId].children = mobile.nodes[mobile.rootId].children.filter((c: string) => c !== btnId);
+    expect(a.importProject(JSON.stringify(broken))).toBe(false);
+    expect(useStore.getState().project.name).toBe(nameBefore);   // 未被覆盖
+    expect(countModules()).toBe(1);
+  });
+
   it('性能冒烟：200 节点增删不超时（数据层）', () => {
     const a = useStore.getState().actions;
     const t0 = Date.now();

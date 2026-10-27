@@ -1,9 +1,7 @@
 // 树工具：绝对原点、容器命中测试（CV-06 嵌套）
 import type { Point } from './coords';
 import type { Board, Node } from '../types';
-
-// 可作为容器的模块类型（与 LB-01 注册表 isContainer 对应）
-export const CONTAINER_TYPES = new Set(['card', 'group']);
+import { CONTAINER_TYPES } from '../modules/registry';
 
 /** 节点在画板坐标系中的绝对左上角（沿父链累加） */
 export function absOrigin(board: Board, id: string): Point {

@@ -81,3 +81,31 @@ export function isProject(p: unknown): p is Project {
   return !!v && typeof v.schemaVersion === 'number'
     && Array.isArray(v.pages) && typeof v.theme === 'object';
 }
+
+// ST-05 · 深校验（导入 JSON / 读取持久化时用）：
+// 每块画板 root 在位且无父；所有节点父子关系双向一致；frame 数值合法
+export function isValidProject(p: Project): boolean {
+  if (!isProject(p) || !p.pages.length) return false;
+  for (const pg of p.pages) {
+    if (typeof pg.id !== 'string' || typeof pg.name !== 'string') return false;
+    const boards = Object.values(pg.boards ?? {}) as Board[];
+    if (!boards.length) return false;
+    for (const b of boards) {
+      if (!b || typeof b.rootId !== 'string' || !b.nodes || typeof b.nodes !== 'object') return false;
+      const root = b.nodes[b.rootId];
+      if (!root || root.parentId !== null || !isNode(root)) return false;
+      for (const n of Object.values(b.nodes)) {
+        if (!isNode(n) || !isFrame(n.frame) || n.frame.w < 0 || n.frame.h < 0) return false;
+        if (n.parentId !== null) {
+          const parent = b.nodes[n.parentId];
+          if (!parent || !parent.children.includes(n.id)) return false;   // 父必须含我
+        }
+        for (const cid of n.children) {
+          const c = b.nodes[cid];
+          if (!c || c.parentId !== n.id) return false;                    // 子必须认我
+        }
+      }
+    }
+  }
+  return true;
+}

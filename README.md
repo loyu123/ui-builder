@@ -46,11 +46,11 @@ src/
 
 ## Tests
 
-**20 tests** (`npm test`):
+**22 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
-- `src/store/store.test.ts` — 9 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import, perf smoke)
-- `src/exporter/exporter.test.ts` — 4 export e2e tests (zip layout / components / pages.json / TSX refs)
+- `src/store/store.test.ts` — 10 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import with deep validation, perf smoke)
+- `src/exporter/exporter.test.ts` — 5 export e2e tests (zip layout / components / pages.json / TSX refs / slug uniqueness)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (for manual real build verification)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).
