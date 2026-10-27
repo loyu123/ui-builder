@@ -51,13 +51,14 @@ src/
 
 ## 测试
 
-共 **63 条**（`npm test`）：
+共 **73 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
 - `src/lib/tree.test.ts` — 树工具 6 条（最深容器命中/空白/exclude/防自嵌套/子树集合/绝对原点）
 - `src/lib/persist.test.ts` — IndexedDB 4 条（往返/空库/v1→v2 迁移/clearAll，fake-indexeddb）
 - `src/lib/i18n.test.ts` — i18n 5 条（zh/en 键一致/回退链/占位/语言切换）
+- `src/editor/canvas/gesture.test.ts` — 手势纯函数 10 条（八向缩放/最小值钳制/Shift 锁比例/框选命中与边界相切）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）
 - `src/store/store.test.ts` — store 回归 18 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、边界用例、性能冒烟）
 - `src/exporter/exporter.test.ts` — 导出端到端 8 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/隐藏节点一致性/主题变量/TSX 引用/slug 唯一化与多页路由）

@@ -1,19 +1,18 @@
 // 中间画布 · DV-01 设备画板 + CV-01 嵌套渲染 + CV-04 吸附 + CV-05 缩放手柄
 // + CV-06 容器进出 + CV-03 框选/多选移动 + DV-03 缩放平移
+// P1-14 · 拆分：单节点渲染 → canvas/NodeView.tsx（memo），缩放/框选纯函数 → canvas/gesture.ts（可单测）；
+//          本文件保留手势状态机（begin/move/up）与台面渲染。
 import type * as React from 'react';
-import { useEffect, useRef, useState, memo } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { DEVICES, useStore } from '../store';
 import { screenToBoard, snapThreshold } from '../lib/coords';
 import { matchSnap } from '../lib/snap';
 import { absOrigin, findContainerAt, subtreeIds } from '../lib/tree';
-import { ModuleRenderer } from '../modules/renderers';
-const MemoModuleRenderer = memo(ModuleRenderer);   // P1-08 · node 引用不变即跳过重渲染（immer 结构共享）
+import { useT } from '../lib/i18n';
+import { NodeView } from './canvas/NodeView';
+import { marqueeHits, resizeFrame, type Handle } from './canvas/gesture';
 import type { Frame, Node } from '../types';
-
-type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
-const MIN = 16;
-const ACCENT = '#f97316';
 
 interface Gesture {
   mode: 'move' | 'resize' | 'marquee' | 'pan';
@@ -27,14 +26,10 @@ interface Gesture {
   startClient?: { x: number; y: number };
 }
 
-// 双击可改文字的模块：type → 文案所在 props 字段
-const EDITABLE_TEXT: Record<string, string> = {
-  heading: 'text', paragraph: 'text', 'button-primary': 'label', 'button-secondary': 'label',
-  link: 'label', topnav: 'title', 'list-item': 'title', notification: 'text', 'message-bubble': 'text',
-  'watch-list-row': 'text', 'watch-face': 'time', 'mobile-statusbar': 'time', stat: 'value',
-};
+interface EditState { id: string; key: string; value: string }
 
 export function Canvas({ previewing }: { previewing?: boolean }) {
+  const t = useT();
   const device = useStore(s => s.editor.currentDevice);
   const zoom = useStore(s => s.editor.zoom);
   const pan = useStore(s => s.editor.pan);
@@ -62,8 +57,10 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [marquee, setMarquee] = useState<Frame | null>(null);
-  const [editing, setEditing] = useState<{ id: string; key: string; value: string } | null>(null);
+  const [editing, setEditing] = useState<EditState | null>(null);
+  const editingRef = useRef<EditState | null>(null);
   const spaceDown = useRef(false);
+  const setEdit = (e: EditState | null) => { editingRef.current = e; setEditing(e); };
 
   // 空格平移（DV-03）：按住空格 + 拖动台面；Esc 手势中取消（P2-21，未落库直接丢弃预览）
   useEffect(() => {
@@ -121,21 +118,26 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  function boardPoint(e: React.PointerEvent) {
-    return screenToBoard(
-      e.clientX, e.clientY,
-      boardRef.current!.getBoundingClientRect(),
-      useStore.getState().editor.zoom,
-    );
-  }
-
-  function beginGesture(e: React.PointerEvent, mode: Gesture['mode'], node?: Node, handle?: Handle) {
+  // —— 传给 NodeView 的稳定回调（memo 生效的前提） ——
+  const beginGesture = useCallback(function beginGesture(
+    e: React.PointerEvent, mode: Gesture['mode'], node?: Node, handle?: Handle,
+  ) {
     if (!boardRef.current) return;
     // 预览模式：只允许空格/触控板平移，拖动/缩放/框选/选中一律不响应
     if (previewing && !(mode === 'marquee' && spaceDown.current)) return;
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const st = useStore.getState();
+    const curBoard = (st.project.pages.find(pg => pg.id === st.editor.currentPageId) ?? st.project.pages[0])
+      .boards[st.editor.currentDevice];
+
+    function boardPoint(ev: React.PointerEvent) {
+      return screenToBoard(
+        ev.clientX, ev.clientY,
+        boardRef.current!.getBoundingClientRect(),
+        useStore.getState().editor.zoom,
+      );
+    }
 
     // 空格平移：最高优先级（在台面空白处按住空格拖动）
     if (mode === 'marquee' && spaceDown.current) {
@@ -179,10 +181,10 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     let startFrames: Record<string, Frame> | undefined;
     if (st.editor.selection.includes(node.id) && st.editor.selection.length > 1) {
       const parent = node.parentId;
-      const group = st.editor.selection.filter(id => board.nodes[id]?.parentId === parent);
+      const group = st.editor.selection.filter(id => curBoard.nodes[id]?.parentId === parent);
       if (group.length > 1) {
         multiIds = group;
-        startFrames = Object.fromEntries(group.map(id => [id, { ...board.nodes[id].frame }]));
+        startFrames = Object.fromEntries(group.map(id => [id, { ...curBoard.nodes[id].frame }]));
       }
     }
 
@@ -192,6 +194,33 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
       startPt: boardPoint(e),
     };
     st.actions.select([node.id]);
+  }, [previewing]);
+
+  const handleNavigate = useCallback((targetPageId: string) => {
+    setPreviewPageId(targetPageId);
+  }, []);
+
+  const handleStartEdit = useCallback((id: string, key: string, value: string) => {
+    setEdit({ id, key, value });
+  }, []);
+
+  const handleEditChange = useCallback((value: string) => {
+    const e = editingRef.current;
+    if (e) setEdit({ ...e, value });
+  }, []);
+
+  const handleEditEnd = useCallback((commit: boolean) => {
+    const e = editingRef.current;
+    if (e && commit) useStore.getState().actions.setProp(e.id, e.key, e.value);
+    setEdit(null);
+  }, []);
+
+  function boardPoint(e: React.PointerEvent) {
+    return screenToBoard(
+      e.clientX, e.clientY,
+      boardRef.current!.getBoundingClientRect(),
+      useStore.getState().editor.zoom,
+    );
   }
 
   // CV-04 · 吸附
@@ -214,7 +243,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     const gv: number[] = [];
     const gh: number[] = [];
     const out = { ...frame };
-    // P1-14 · 匹配逻辑抽到 lib/snap.ts（纯函数，可单测）
+    // P1-14 · 匹配逻辑在 lib/snap.ts（纯函数，已单测）
     const bestV = matchSnap([myAbs.x, myAbs.x + myAbs.w / 2, myAbs.x + myAbs.w], vx, th);
     if (bestV) { out.x += bestV.d; gv.push(bestV.cand); }
     const bestH = matchSnap([myAbs.y, myAbs.y + myAbs.h / 2, myAbs.y + myAbs.h], hy, th);
@@ -255,32 +284,10 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
       });
       return;
     } else {
-      const h = g.handle!;
-      const ratio = g.startFrame.w / Math.max(1, g.startFrame.h);
-      if (h.includes('e')) f.w = Math.max(MIN, g.startFrame.w + dx);
-      if (h.includes('s')) f.h = Math.max(MIN, g.startFrame.h + dy);
-      if (h.includes('w')) {
-        const w = Math.max(MIN, g.startFrame.w - dx);
-        f.x = g.startFrame.x + (g.startFrame.w - w);
-        f.w = w;
-      }
-      if (h.includes('n')) {
-        const hgt = Math.max(MIN, g.startFrame.h - dy);
-        f.y = g.startFrame.y + (g.startFrame.h - hgt);
-        f.h = hgt;
-      }
-      // CV-05 · Shift 锁比例（仅角点手柄）
-      if (e.shiftKey && h.length === 2) {
-        if (h.includes('e') || h.includes('w')) {
-          f.h = Math.max(MIN, f.w / ratio);
-          if (h.includes('n')) f.y = g.startFrame.y + (g.startFrame.h - f.h);
-        } else {
-          f.w = Math.max(MIN, f.h * ratio);
-          if (h.includes('w')) f.x = g.startFrame.x + (g.startFrame.w - f.w);
-        }
-      }
+      // P1-14 · 缩放推框在 canvas/gesture.ts（纯函数，已单测）
+      const f2 = resizeFrame(g.startFrame, g.handle!, dx, dy, e.shiftKey);
       setGuides({ v: [], h: [] });
-      setPreview({ id: g.nodeId!, frame: f });
+      setPreview({ id: g.nodeId!, frame: f2 });
     }
   }
 
@@ -288,15 +295,11 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     const g = gesture.current;
     const a = useStore.getState().actions;
     if (g?.mode === 'marquee' && marquee) {
-      // 框选：命中根层子节点（abs = frame）
-      const hits = board.nodes[board.rootId].children
-        .map(id => board.nodes[id])
-        .filter(n => {
-          if (marquee.w < 3 && marquee.h < 3) return false;
-          return n.frame.x < marquee.x + marquee.w && n.frame.x + n.frame.w > marquee.x
-            && n.frame.y < marquee.y + marquee.h && n.frame.y + n.frame.h > marquee.y;
-        })
-        .map(n => n.id);
+      // 框选：命中根层子节点（P1-14 · 命中判定在 canvas/gesture.ts，已单测）
+      const hits = marqueeHits(
+        board.nodes[board.rootId].children.map(id => board.nodes[id]).filter(Boolean),
+        marquee,
+      );
       a.select(hits);
     } else if (g && preview && g.mode === 'move' && g.nodeId) {
       const dxA = preview.frame.x - g.startFrame.x;
@@ -335,103 +338,11 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     setMarquee(null);
   }
 
-  // —— 渲染 ——（嵌套递归；子节点坐标相对父容器左上角）
-  function renderNode(n: Node): React.ReactNode {
-    if (n.hidden) return null;   // PP-03 · 隐藏节点不渲染
-    const frame = preview?.id === n.id ? preview.frame : n.frame;
-    const selected = selection.includes(n.id) || preview?.id === n.id;
-    const isDropTarget = dropTarget === n.id && gesture.current?.mode === 'move';
-    return (
-      <div
-        key={n.id}
-        aria-selected={selected}
-        onPointerDown={e => beginGesture(e, 'move', n)}
-        onClick={e => {
-          // 预览互动：navigate 事件真实切换预览页
-          if (!previewing) return;
-          const ev = Object.values(n.events ?? {}).find(s => s.action !== 'none');
-          if (ev?.action === 'navigate' && ev.target) {
-            e.stopPropagation();
-            setPreviewPageId(ev.target);
-          }
-        }}
-        onDoubleClick={e => {
-          e.stopPropagation();
-          if (previewing) return;   // 预览模式下不允许就地编辑
-          const key = EDITABLE_TEXT[n.type];
-          if (key) setEditing({ id: n.id, key, value: String(n.props[key] ?? '') });
-        }}
-        style={{
-          position: 'absolute',
-          left: frame.x, top: frame.y, width: frame.w, height: frame.h,
-          transform: n.rotation ? `rotate(${n.rotation}deg)` : undefined,
-          outline: selected ? `2px solid ${ACCENT}` : 'none',
-          outlineOffset: 1,
-          opacity: preview?.id === n.id ? 0.9 : 1,
-          cursor: 'grab',
-        }}
-      >
-        <MemoModuleRenderer node={n} interactive={previewing} />
-        {/* 功能备注气泡（PP-03） */}
-        {n.note && !previewing && (
-          <div style={{
-            position: 'absolute', bottom: 'calc(100% + 4px)', left: 0,
-            maxWidth: 240, background: '#2a3548', color: '#e6ebf2',
-            border: '1px solid #f97316', borderRadius: 8, padding: '4px 8px',
-            fontSize: 10, lineHeight: 1.5, zIndex: 20, pointerEvents: 'none',
-            boxShadow: '0 4px 14px rgba(0,0,0,.35)', whiteSpace: 'normal',
-          }}>
-            <b style={{ color: '#f97316' }}>备注：</b>{n.note}
-          </div>
-        )}
-        {/* 双击就地编辑文字（CV-03 补充） */}
-        {editing?.id === n.id && (
-          <input
-            autoFocus
-            value={editing.value}
-            onPointerDown={e => e.stopPropagation()}
-            onChange={e => setEditing({ ...editing, value: e.target.value })}
-            onBlur={() => { useStore.getState().actions.setProp(n.id, editing.key, editing.value); setEditing(null); }}
-            onKeyDown={e => {
-              if (e.key === 'Enter') { useStore.getState().actions.setProp(n.id, editing.key, editing.value); setEditing(null); }
-              if (e.key === 'Escape') setEditing(null);
-            }}
-            style={{
-              position: 'absolute', inset: 0, width: '100%', zIndex: 30,
-              border: '2px solid #f97316', borderRadius: 4, padding: '0 8px',
-              fontSize: 13, boxSizing: 'border-box', outline: 'none',
-            }}
-          />
-        )}
-        {n.children.map(cid => board.nodes[cid] && renderNode(board.nodes[cid]))}
-        {isDropTarget && (
-          <div style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            outline: '2px dashed #f97316', outlineOffset: -2,
-            background: 'rgba(249,115,22,.06)', zIndex: 5,
-          }} />
-        )}
-        {selected && (['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as Handle[]).map(h => (
-          <div
-            key={h}
-            onPointerDown={e => beginGesture(e, 'resize', n, h)}
-            style={{
-              position: 'absolute', width: 10, height: 10,
-              background: '#ffffff', border: `2px solid ${ACCENT}`,
-              borderRadius: 2, zIndex: 10,
-              cursor: HANDLE_CURSOR[h], touchAction: 'none',
-              ...HANDLE_POS[h],
-            }}
-          />
-        ))}
-      </div>
-    );
-  }
-
   const root = board.nodes[board.rootId];
   const rootChildren = root.children.map(id => board.nodes[id]).filter(Boolean);
   const worldW = pan.x + dev.w * zoom + 80;
   const worldH = pan.y + dev.h * zoom + 80;
+  const dropActive = gesture.current?.mode === 'move';
 
   return (
     <main style={{ ...wrap, position: 'relative' }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}>
@@ -444,11 +355,11 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           padding: '5px 14px', fontSize: 11, color: '#8a8378',
           boxShadow: '0 2px 10px rgba(31,35,40,.06)', whiteSpace: 'nowrap',
         }}>
-          <span>缩放 <b style={{ color: '#1f2328' }}>{Math.round(zoom * 100)}%</b></span>
+          <span>{t('canvas_zoom_label')} <b style={{ color: '#1f2328' }}>{Math.round(zoom * 100)}%</b></span>
           <span style={{ color: '#ece7dd' }}>|</span>
-          <span>对齐参考线 开</span>
+          <span>{t('canvas_guides')}</span>
           <span style={{ color: '#ece7dd' }}>|</span>
-          <span>吸附 6px</span>
+          <span>{t('canvas_snap')}</span>
           <span style={{ color: '#ece7dd' }}>|</span>
           {[0.5, 1, 1.5].map(z => (
             <button key={z} onClick={() => useStore.getState().actions.setZoom(z)}
@@ -456,7 +367,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
               {z * 100}%
             </button>
           ))}
-          <span style={{ fontSize: 10, color: '#c9c2b6' }}>Ctrl+滚轮</span>
+          <span style={{ fontSize: 10, color: '#c9c2b6' }}>{t('canvas_ctrl_wheel')}</span>
         </div>
       )}
 
@@ -469,7 +380,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           borderRadius: 999, padding: '5px 14px', fontSize: 12,
           boxShadow: '0 4px 14px rgba(0,0,0,.35)',
         }}>
-          <span style={{ color: '#f97316' }}>● 预览</span>
+          <span style={{ color: '#f97316' }}>{t('preview_badge')}</span>
           <select
             value={page.id}
             onChange={e => setPreviewPageId(e.target.value)}
@@ -477,7 +388,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           >
             {pages.map(pg => <option key={pg.id} value={pg.id} style={{ color: '#1f2328' }}>{pg.name}</option>)}
           </select>
-          <span style={{ fontSize: 10, color: '#9aa7b8' }}>Esc 退出 · 可输入/点击互动</span>
+          <span style={{ fontSize: 10, color: '#9aa7b8' }}>{t('preview_hint')}</span>
         </div>
       )}
 
@@ -523,7 +434,27 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
                 position: 'relative',
               }}
             >
-            {rootChildren.map(n => renderNode(n))}
+            {rootChildren.map(n => n.hidden ? null : (   // PP-03 · 隐藏节点不渲染
+              <NodeView
+                key={n.id}
+                node={n}
+                board={board}
+                previewing={previewing}
+                selection={selection}
+                previewId={preview?.id ?? null}
+                previewFrame={preview?.frame ?? null}
+                dropTargetId={dropTarget}
+                dropActive={dropActive}
+                editingId={editing?.id ?? null}
+                editingKey={editing?.key ?? ''}
+                editingValue={editing?.value ?? ''}
+                beginGesture={beginGesture}
+                onNavigate={handleNavigate}
+                onStartEdit={handleStartEdit}
+                onEditChange={handleEditChange}
+                onEditEnd={handleEditEnd}
+              />
+            ))}
 
             {guides.v.map((x, i) => (
               <div key={`v${i}`} style={{ position: 'absolute', left: x, top: 0, width: 1, height: '100%', background: '#f43f5e', zIndex: 99, pointerEvents: 'none' }} />
@@ -549,7 +480,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
                 color: '#c0c4cc', fontSize: 13,
                 border: '2px dashed #e5e7eb', margin: 24, borderRadius: 12,
               }}>
-                从左侧拖入模块
+                {t('canvas_hint_drag')}
               </div>
             )}
             </div>
@@ -559,21 +490,6 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     </main>
   );
 }
-
-const HANDLE_CURSOR: Record<Handle, string> = {
-  n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
-  ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize',
-};
-const HANDLE_POS: Record<Handle, React.CSSProperties> = {
-  n:  { top: -5, left: '50%', marginLeft: -5 },
-  s:  { bottom: -5, left: '50%', marginLeft: -5 },
-  e:  { right: -5, top: '50%', marginTop: -5 },
-  w:  { left: -5, top: '50%', marginTop: -5 },
-  ne: { top: -5, right: -5 },
-  nw: { top: -5, left: -5 },
-  se: { bottom: -5, right: -5 },
-  sw: { bottom: -5, left: -5 },
-};
 
 const wrap: React.CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 };
 const zoomBtn: React.CSSProperties = {

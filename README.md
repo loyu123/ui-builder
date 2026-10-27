@@ -54,13 +54,14 @@ src/
 
 ## Tests
 
-**63 tests** (`npm test`):
+**73 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
 - `src/lib/tree.test.ts` — 6 tree tests (deepest container hit / blank / exclude / self-or-descendant / subtreeIds / absOrigin)
 - `src/lib/persist.test.ts` — 4 IndexedDB tests (round-trip / empty / v1→v2 migration / clearAll) via fake-indexeddb
 - `src/lib/i18n.test.ts` — 5 i18n tests (zh/en key parity / fallback / params / lang switch)
+- `src/editor/canvas/gesture.test.ts` — 10 gesture tests (8-handle resize / min clamp / Shift ratio lock / marquee hit + edge-tangent)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 18 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import deep-validation, rotation, events/theme, graded snapshots, boundary cases, perf smoke)
 - `src/exporter/exporter.test.ts` — 8 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router)
