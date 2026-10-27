@@ -47,6 +47,28 @@ describe('EX · 导出工程端到端', () => {
     expect(names.length).toBeGreaterThanOrEqual(palette.length);
   });
 
+  it('P3-42：pages.json 可见节点与页面 TSX 输出一一对应', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 10, y: 10, w: 100, h: 30 });
+    a.addNode('button-primary', { x: 10, y: 60, w: 200, h: 48 });
+    // 隐藏节点不应出现在导出 TSX 中
+    const kid = useStore.getState().project.pages[0].boards.mobile.nodes;
+    const firstId = Object.keys(kid).find(id => kid[id].type === 'heading')!;
+    a.setNodeFlag(firstId, 'hidden', true);
+
+    const bytes = await exportProjectZip(useStore.getState().project);
+    const zip = await JSZip.loadAsync(bytes);
+    const tsx = await zip.file('ui-builder-export/web/src/pages/Page/Mobile.tsx')!.async('string');
+    const comments = (tsx.match(/\{\/\* /g) ?? []).length;   // emitNode 每个可见节点一条 {/* label */}
+
+    const json = JSON.parse(await zip.file('ui-builder-export/data/pages.json')!.async('string'));
+    const nodes = Object.values(json.pages[0].boards.mobile.nodes) as Array<{ type: string; hidden?: boolean }>;
+    const visible = nodes.filter(n => n.type !== 'page' && !n.hidden).length;
+    expect(comments).toBe(visible);
+    expect(tsx).not.toContain('Heading');   // 隐藏的标题不导出
+  });
+
   it('P2-32：与主题色相同的样式值导出为 CSS 变量（var(--color-*)）', async () => {
     useStore.setState({ project: createEmptyProject() });
     const a = useStore.getState().actions;
