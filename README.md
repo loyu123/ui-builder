@@ -66,8 +66,9 @@ src/
 
 ## Roadmap
 
-- **v1 (current):** pure frontend, offline; rule-based AI; React static export
-- **v1.1:** event-binding UI, multi-page route templates, optional remote AI (embed/rerank via local gateway)
+- **v1.0:** pure frontend, offline; rule-based AI; React static export
+- **v1.1 (current):** event-binding UI (with real `navigate` routing in exports), theme token editor, keyboard-shortcut help, PR CI, sliced store, drift-guard tests
+- **Later:** optional remote AI (embed/rerank via local gateway), coverage targets
 - **Out of scope:** multiplayer collab, responsive cross-device layout, real-device preview, backend business logic (see S1–S3 delivery switches)
 
 ## Demo script
