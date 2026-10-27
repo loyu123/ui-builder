@@ -1,5 +1,4 @@
 // AppShell · C 方向顶栏（Logo/项目名/设备切换/预览/导出工程）+ 三栏 + 预览模式
-import type * as React from 'react';
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
 import { useStore, DEVICES } from '../store';
@@ -18,10 +17,10 @@ export function AppShell() {
   const device = useStore(s => s.editor.currentDevice);
   const setDevice = useStore(s => s.actions.setDevice);
   const [previewing, setPreviewing] = useState(false);
-
-  useEffect(() => { void hydrate(); }, [hydrate]);
-
+  const [ready, setReady] = useState(false);   // P2-28 · IndexedDB 读取完成前显示骨架，避免闪默认空项目
   const [dragType, setDragType] = useState<string | null>(null);
+
+  useEffect(() => { void hydrate().then(() => setReady(true)); }, [hydrate]);
 
   function onDragStart(e: DragEndEvent) {
     const data = e.active.data.current;
@@ -60,24 +59,55 @@ export function AppShell() {
     }
   }
 
-  // CV-03 · 快捷键
-  function onKeyDown(e: React.KeyboardEvent) {
-    const st = useStore.getState();
-    const tag = (e.target as HTMLElement)?.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if (e.key === 'Escape' && previewing) { setPreviewing(false); return; }
-    if (e.key === 'Escape') { st.actions.select([]); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { st.actions.copySelection(); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { st.actions.pasteClipboard(); return; }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-      e.preventDefault();
-      if (e.shiftKey) st.actions.redo(); else st.actions.undo();
-      return;
+  // CV-03 · 快捷键（window 级监听，焦点不在编辑器内也生效）
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const st = useStore.getState();
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'Escape' && previewing) { setPreviewing(false); return; }
+      if (e.key === 'Escape') { st.actions.select([]); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { st.actions.copySelection(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') { st.actions.pasteClipboard(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) st.actions.redo(); else st.actions.undo();
+        return;
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
+        e.preventDefault();
+        st.actions.deleteNode(st.editor.selection[0]);
+        return;
+      }
+      // P2-20 · 方向键微调：1px，Shift +8px（400ms 内合并为一步撤销）
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) && st.editor.selection.length) {
+        e.preventDefault();
+        const dx = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+        const dy = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+        const step = e.shiftKey ? 8 : 1;
+        const page = st.project.pages.find(pg => pg.id === st.editor.currentPageId) ?? st.project.pages[0];
+        const board = page.boards[st.editor.currentDevice];
+        for (const id of st.editor.selection) {
+          const n = board.nodes[id];
+          if (!n || n.parentId === null) continue;
+          if (dx) st.actions.setFrameField(id, 'x', n.frame.x + dx * step);
+          else st.actions.setFrameField(id, 'y', n.frame.y + dy * step);
+        }
+      }
     }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
-      e.preventDefault();
-      st.actions.deleteNode(st.editor.selection[0]);
-    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [previewing]);
+
+  // P2-28 · 加载骨架（IndexedDB 读取通常 <100ms，仅防闪现）——所有 hooks 之后
+  if (!ready) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#faf9f7', color: '#a8a199' }}>
+        <div style={{ width: 28, height: 28, border: '3px solid #ece7dd', borderTopColor: '#f97316', borderRadius: '50%', animation: 'ub-spin 0.8s linear infinite' }} />
+        <span style={{ fontSize: 12 }}>正在加载设计数据…</span>
+        <style>{'@keyframes ub-spin { to { transform: rotate(360deg); } }'}</style>
+      </div>
+    );
   }
 
   function togglePreview() {
@@ -99,7 +129,7 @@ export function AppShell() {
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#faf9f7' }} onKeyDown={onKeyDown}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#faf9f7' }}>
         {/* C 方向顶栏 */}
         <header style={{
           height: 46, flexShrink: 0, display: 'flex', alignItems: 'center',

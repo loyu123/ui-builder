@@ -64,9 +64,18 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
   const [editing, setEditing] = useState<{ id: string; key: string; value: string } | null>(null);
   const spaceDown = useRef(false);
 
-  // 空格平移（DV-03）：按住空格 + 拖动台面
+  // 空格平移（DV-03）：按住空格 + 拖动台面；Esc 手势中取消（P2-21，未落库直接丢弃预览）
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown.current = true; };
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space') { spaceDown.current = true; return; }
+      if (e.key === 'Escape' && gesture.current) {
+        gesture.current = null;
+        setPreview(null);
+        setGuides({ v: [], h: [] });
+        setMarquee(null);
+        setDropTarget(null);
+      }
+    };
     const up = (e: KeyboardEvent) => { if (e.code === 'Space') spaceDown.current = false; };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
