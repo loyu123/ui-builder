@@ -125,9 +125,9 @@ function pageSlug(name: string, used: Set<string>): string {
   return out;
 }
 
-function pageTsx(page: Page, device: DeviceId, slug: string): string {
+function pageTsx(page: Page, device: DeviceId, slug: string, usedModules: Set<string>): string {
   const board: Board = page.boards[device];
-  const used = new Set<string>();
+  const used = usedModules;   // P2-31 · 跨页共享：组件按需裁剪
   const root = board.nodes[board.rootId];
   const children = root.children.map(id => board.nodes[id]).filter(Boolean)
     .map(n => emitNode(n, board, '      ', used)).join('\n');
@@ -174,9 +174,18 @@ export async function exportProjectZip(project: Project): Promise<Uint8Array> {
   f('web/vite.config.ts', `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });\n`);
   f('web/index.html', `<!doctype html>\n<html lang="zh-CN">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${project.name}</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>\n</html>\n`);
 
-  // 全部模块组件（EX-02：每个模块一个组件文件；st/p 辅助保证 TS 严格模式可编译）
+  // 模块组件按需裁剪（P2-31：zip 只打页面实际引用的组件，未用的不生成）
+  // 先独立收集全项目用到的模块类型（与页面循环顺序解耦）
+  const usedTypes = new Set<string>();
+  for (const pg of project.pages) {
+    for (const b of Object.values(pg.boards)) {
+      for (const n of Object.values(b.nodes)) {
+        if (n.type !== 'page') usedTypes.add(n.type);
+      }
+    }
+  }
   for (const m of REGISTRY_MAP ? Object.values(REGISTRY_MAP) : []) {
-    if (m.type === 'page') continue;
+    if (m.type === 'page' || !usedTypes.has(m.type)) continue;
     const name = pascal(m.type);
     const needFire = m.type === 'button-primary' || m.type === 'button-secondary';
     f(`web/src/components/${name}.tsx`,
@@ -201,6 +210,7 @@ export function ${name}({ props, style }: Props) {
   // 页面 slug 唯一化（P2-13 路由与 navigate 跳转都要用，先于事件模板计算）
   const pageNames = new Map<string, string>();
   const slugUsed = new Set<string>();
+  const usedModules = usedTypes;   // P2-31 · 页面 TSX 共享同一集合
   for (const pg of project.pages) {
     pageNames.set(pg.id, pageSlug(pg.name, slugUsed));
   }
@@ -240,7 +250,7 @@ ${actionCases || '    // 当前设计未挂接任何事件'}
   for (const pg of project.pages) {
     const slug = pageNames.get(pg.id)!;
     for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
-      f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device, slug));
+      f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device, slug, usedModules));
     }
     f(`web/src/pages/${slug}/index.tsx`,
 `import Mobile from './Mobile';

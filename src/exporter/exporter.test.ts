@@ -47,6 +47,18 @@ describe('EX · 导出工程端到端', () => {
     expect(names.length).toBeGreaterThanOrEqual(palette.length);
   });
 
+  it('P2-31：未使用的模块组件被裁剪', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const a = useStore.getState().actions;
+    a.addNode('button-primary', { x: 10, y: 10, w: 200, h: 48 });
+    const bytes = await exportProjectZip(useStore.getState().project);
+    const zip = await JSZip.loadAsync(bytes);
+    const names = Object.keys(zip.files).filter(n => n.startsWith('ui-builder-export/web/src/components/'));
+    expect(names).toContain('ui-builder-export/web/src/components/ButtonPrimary.tsx');
+    expect(names).not.toContain('ui-builder-export/web/src/components/Switch.tsx');
+    expect(names.length).toBeLessThan(10);
+  });
+
   it('data/pages.json 回读后 events 字段在位（EX-03 接口位）', async () => {
     const bytes = await buildZip();
     const zip = await JSZip.loadAsync(bytes);

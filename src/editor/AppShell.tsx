@@ -2,6 +2,7 @@
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useEffect, useState } from 'react';
 import { useStore, DEVICES } from '../store';
+import { demoLoginProject } from '../store/demo';
 import type { DeviceId } from '../types';
 import { REGISTRY_MAP } from '../modules/registry';
 import { screenToBoard } from '../lib/coords';
@@ -20,7 +21,16 @@ export function AppShell() {
   const [ready, setReady] = useState(false);   // P2-28 · IndexedDB 读取完成前显示骨架，避免闪默认空项目
   const [dragType, setDragType] = useState<string | null>(null);
 
-  useEffect(() => { void hydrate().then(() => setReady(true)); }, [hydrate]);
+  useEffect(() => {
+    void hydrate().then(() => {
+      // P2-34 · 示例入口：?demo=login 灌入示例登录页（覆盖当前设计，便于演示/回归）
+      if (new URLSearchParams(window.location.search).get('demo') === 'login') {
+        const project = demoLoginProject();
+        useStore.setState({ project, editor: { ...useStore.getState().editor, currentPageId: project.pages[0].id, selection: [] } });
+      }
+      setReady(true);
+    });
+  }, [hydrate]);
 
   function onDragStart(e: DragEndEvent) {
     const data = e.active.data.current;

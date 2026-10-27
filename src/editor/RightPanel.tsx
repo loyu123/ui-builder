@@ -5,6 +5,7 @@ import type * as React from 'react';
 import { useStore } from '../store';
 import { REGISTRY_MAP, type FieldDef } from '../modules/registry';
 import type { EventSpec } from '../types';
+import { hasRemoteAi } from '../lib/aiClient';
 import { runRules, type Suggestion } from '../ai/engine';
 
 function fieldInputStyle(): React.CSSProperties {
@@ -222,6 +223,11 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
             <div style={{ fontSize: 10, color: '#a8a199' }}>{it.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* P2-33 · AI 模式状态可见：本地规则 / 远程网关 */}
+      <div style={{ fontSize: 10, color: hasRemoteAi() ? '#166534' : '#a8a199', textAlign: 'center' }}>
+        {hasRemoteAi() ? '● 远程 AI 已配置（语义增强可用）' : '● 本地规则引擎模式 · 配置 .env 可启用远程 AI'}
       </div>
 
       {/* 操作记录 */}

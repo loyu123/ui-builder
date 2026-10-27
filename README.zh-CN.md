@@ -18,6 +18,8 @@ npm run build      # 生产构建
 
 > 本地 AI 网关（可选）：复制 `.env.example` 为 `.env` 并填入地址与密钥。`.env` 已被 gitignore，密钥不入库；未配置时 AI 建议自动回退为纯规则引擎。
 
+> 示例项目：访问 `http://localhost:5173/?demo=login` 可一键灌入完整登录页示例设计（覆盖当前画布）。
+
 ## 功能总览
 
 | 能力 | 说明 |
@@ -53,7 +55,7 @@ src/
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）
 - `src/store/store.test.ts` — store 回归 12 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、性能冒烟）
-- `src/exporter/exporter.test.ts` — 导出端到端 5 条（zip 规格/组件齐全/pages.json 回读/TSX 引用/slug 唯一化与多页路由）
+- `src/exporter/exporter.test.ts` — 导出端到端 6 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/TSX 引用/slug 唯一化与多页路由）
 - `src/exporter/guard.test.ts` — 漂移守卫 2 条（模板 props ⊆ 注册表；事件 key 拼法）
 - `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（双页 + navigate 场景，供人工解压做真实构建验收）
 
