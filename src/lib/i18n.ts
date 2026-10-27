@@ -1,0 +1,321 @@
+// P3-40 · UI 文案字典（i18n）：界面中英切换，localStorage 持久化
+// 本轮覆盖：顶栏/左右栏面板框架文案、模块库标签与分类（registry labelEn）、事件动作选项。
+// 暂不迁移（后续批次）：AI 规则引擎消息（ai/engine 生成内容）、registry fields 字段标签、导出注释。
+import { useSyncExternalStore } from 'react';
+
+export type Lang = 'zh' | 'en';
+
+const STORE_KEY = 'ub-lang';
+let lang: Lang = 'zh';
+if (typeof localStorage !== 'undefined') {
+  const saved = localStorage.getItem(STORE_KEY);
+  if (saved === 'zh' || saved === 'en') lang = saved;
+}
+
+const listeners = new Set<() => void>();
+export function getLang(): Lang { return lang; }
+export function setLang(l: Lang): void {
+  if (l === lang) return;
+  lang = l;
+  try { localStorage.setItem(STORE_KEY, l); } catch { /* 隐私模式等忽略 */ }
+  listeners.forEach(f => f());
+}
+function subscribe(f: () => void): () => void {
+  listeners.add(f);
+  return () => { listeners.delete(f); };
+}
+// 组件内取当前语言（语言切换时触发重渲染）
+export function useLang(): Lang { return useSyncExternalStore(subscribe, getLang); }
+// 组件内取翻译函数：const t = useT();（语言切换时随组件重渲染）
+export function useT(): typeof t {
+  useLang();
+  return t;
+}
+
+const zh: Record<string, string> = {
+  // 顶栏（AppShell）
+  app_title: '界面搭建器',
+  preview: '预览',
+  exit_preview: '退出预览',
+  export_zip: '导出工程',
+  direction_tag: '方向 C · 极简中性',
+  loading: '正在加载设计数据…',
+  toast_deleted: '已删除模块 · Ctrl+Z 可撤销',
+  device_desktop: '电脑',
+  device_mobile: '手机',
+  device_watch: '手表',
+  // 左栏（LeftPanel）
+  panel_pages: '页面',
+  new_page: '新建页面',
+  rename_page: '重命名页面',
+  confirm_delete_page: '删除「{name}」？',
+  double_click_rename: '双击重命名',
+  layers_of: '图层（{d}）',
+  board_empty: '画板为空，从下方拖入模块',
+  panel_groups: '组件分组',
+  panel_library: '模块库',
+  module_count: '{n} 个',
+  search_placeholder: '搜索模块，如「头像」',
+  no_match: '无匹配模块',
+  drag_hint: '拖动模块到画布即可创建 · 当前 {n} 个模块',
+  hidden_suffix: '(隐藏)',
+  delete: '删除',
+  // 右栏壳（RightPanel）
+  panel_ai_title: 'AI 设计助手',
+  tab_ai: '助手',
+  tab_props: '属性',
+  // 属性页签（PropsPanel）
+  current_board: '当前画板',
+  module_count_short: '{n} 个模块',
+  copy_from: '复制自:',
+  selected: '选中：',
+  flag_hidden: '隐藏',
+  flag_locked: '锁定',
+  delete_module: '删除模块（Delete）',
+  layer_order: '图层顺序',
+  order_front: '置顶',
+  order_forward: '上移',
+  order_backward: '下移',
+  order_back: '置底',
+  pos_size: '位置与尺寸',
+  deg: '度',
+  reset_rotation: '归零',
+  note_label: '功能备注',
+  note_placeholder: '描述该模块在最终成果中所代表的功能，如：此按钮用于提交登录表单',
+  drop_pos: '拖入位置',
+  pos_auto: '自动',
+  pos_top: '页面顶部',
+  pos_middle: '页面中部',
+  pos_bottom: '页面底部',
+  module_props: '模块属性',
+  events_label: 'events（事件绑定）',
+  event_target_placeholder: '目标 / 参数',
+  event_note_placeholder: '备注（可选）',
+  select_target_page: '选择目标页面…',
+  clear_board: '清空当前画板',
+  autosave_hint: '自动保存已开启；Ctrl+Z 撤销 / Ctrl+Shift+Z 重做',
+  selected_count: '已选 {n} 个模块',
+  batch_align_hint: '批量对齐（对齐到选中集公共边界）',
+  align_left: '左对齐',
+  align_top: '顶对齐',
+  align_right: '右对齐',
+  align_bottom: '底对齐',
+  delete_all: '删除全部（{n} 个，可撤销）',
+  empty_selection: '未选中模块。点击画布中的模块查看与编辑属性。',
+  // 事件动作选项（EVENT_ACTIONS）
+  ev_none: '无（占位）',
+  ev_navigate: '跳转页面',
+  ev_submit: '提交表单',
+  ev_back: '返回上级',
+  ev_dismiss: '关闭弹层',
+  ev_toggle: '切换状态',
+  ev_bind: '绑定接口',
+  ev_external: '打开外链',
+  // AI 页签（AiPanel）
+  ai_optimize: '✦ AI 优化当前画图',
+  ai_run: '（第 {n} 次）',
+  ai_hint_1: '只给建议，不会直接改动你的设计；点「应用」才生效，可随时撤销。',
+  ai_hint_2: '要直接改模块：点选画布中的模块，右侧会自动切到「属性」；也可以在画布上直接拖动、缩放。',
+  ai_all_good: '✓ 检查完成，当前画板没有发现可优化项。',
+  ai_rules_note: '各规则触发条件：对齐需同层 ≥2 个模块 · 等距需 ≥3 个 · 对比度需模块同时设置文字色和背景色 · 字号层级需出现 4 种以上字号 · 文案溢出需文字估算宽超出模块 15%。',
+  ai_summary: '本次 {n} 条建议（共检查 5 类规则）',
+  ai_apply: '应用',
+  ai_ignore: '忽略',
+  ai_manual: '需人工处理（无自动补丁）',
+  ai_applied: '已应用 {n} 条 · 可撤销（Ctrl+Z）',
+  stat_pages: '页面',
+  stat_modules: '模块',
+  stat_boards: '画板',
+  ai_local_mode: '● 本地规则引擎模式 · 配置 .env 可启用远程 AI',
+  ai_remote_mode: '● 远程 AI 已配置（语义增强可用）',
+  undo_hint: '最近 {n} 步可撤销 · {e}',
+  export_never: '从未导出',
+  export_today: '今天导出',
+  export_days_ago: '{n} 天前导出',
+  history_empty: '暂无操作',
+  just_now: '刚刚',
+  steps_ago: '{n} 步前',
+  view_props: '查看属性 ›',
+  export_json: '导出 JSON',
+  import_json: '导入 JSON',
+  theme_title: '🎨 主题',
+  theme_colors: '颜色（导出为 --color-*）',
+  theme_radius: '圆角（导出为 --radius-*px）',
+  theme_font: '字体（导出为 --font-base / --font-size-base）',
+  theme_font_base: '基准字号',
+  shortcuts_title: '⌨️ 快捷键',
+  sc_undo: '撤销',
+  sc_redo: '重做',
+  sc_copy: '复制选中',
+  sc_paste: '粘贴',
+  sc_delete: '删除选中',
+  sc_esc: '取消选择 / 退出预览',
+  sc_pan: '平移画布',
+  sc_zoom: '缩放画布',
+  sc_add_select: '追加多选',
+  sc_ratio: '锁定比例',
+  sc_dblclick: '就地编辑文案',
+  sc_arrows: '微调 1px（Shift 为 8px）',
+  // AI 规则标签（引擎消息本体仍为中文，后续批次迁移）
+  rule_align: '对齐',
+  rule_spacing: '等距栅格',
+  rule_contrast: '对比度',
+  rule_hierarchy: '层级',
+  rule_length: '文案',
+};
+
+const en: Record<string, string> = {
+  app_title: 'UI Builder',
+  preview: 'Preview',
+  exit_preview: 'Exit preview',
+  export_zip: 'Export',
+  direction_tag: 'Theme C · Minimal',
+  loading: 'Loading design data…',
+  toast_deleted: 'Module deleted · Ctrl+Z to undo',
+  device_desktop: 'Desktop',
+  device_mobile: 'Mobile',
+  device_watch: 'Watch',
+  panel_pages: 'Pages',
+  new_page: 'New page',
+  rename_page: 'Rename page',
+  confirm_delete_page: 'Delete "{name}"?',
+  double_click_rename: 'Double-click to rename',
+  layers_of: 'Layers ({d})',
+  board_empty: 'Board is empty — drag modules in from below',
+  panel_groups: 'Groups',
+  panel_library: 'Library',
+  module_count: '{n} items',
+  search_placeholder: 'Search modules, e.g. "Avatar"',
+  no_match: 'No matching modules',
+  drag_hint: 'Drag a module onto the canvas to create it · {n} modules',
+  hidden_suffix: '(hidden)',
+  delete: 'Delete',
+  panel_ai_title: 'AI Design Assistant',
+  tab_ai: 'Assistant',
+  tab_props: 'Props',
+  current_board: 'Current board',
+  module_count_short: '{n} modules',
+  copy_from: 'Copy from:',
+  selected: 'Selected:',
+  flag_hidden: 'Hidden',
+  flag_locked: 'Locked',
+  delete_module: 'Delete module (Del)',
+  layer_order: 'Order',
+  order_front: 'Front',
+  order_forward: 'Forward',
+  order_backward: 'Backward',
+  order_back: 'Back',
+  pos_size: 'Position & size',
+  deg: '°',
+  reset_rotation: 'Reset',
+  note_label: 'Notes',
+  note_placeholder: 'Describe what this module represents in the final product, e.g. this button submits the login form',
+  drop_pos: 'Placement',
+  pos_auto: 'Auto',
+  pos_top: 'Top of page',
+  pos_middle: 'Middle of page',
+  pos_bottom: 'Bottom of page',
+  module_props: 'Properties',
+  events_label: 'events (bindings)',
+  event_target_placeholder: 'Target / param',
+  event_note_placeholder: 'Note (optional)',
+  select_target_page: 'Choose target page…',
+  clear_board: 'Clear this board',
+  autosave_hint: 'Autosave on; Ctrl+Z undo / Ctrl+Shift+Z redo',
+  selected_count: '{n} modules selected',
+  batch_align_hint: 'Batch align (to common bounds of selection)',
+  align_left: 'Left',
+  align_top: 'Top',
+  align_right: 'Right',
+  align_bottom: 'Bottom',
+  delete_all: 'Delete all ({n}, undoable)',
+  empty_selection: 'Nothing selected. Click a module on the canvas to edit its properties.',
+  ev_none: 'None (stub)',
+  ev_navigate: 'Navigate to page',
+  ev_submit: 'Submit form',
+  ev_back: 'Go back',
+  ev_dismiss: 'Dismiss overlay',
+  ev_toggle: 'Toggle state',
+  ev_bind: 'Bind API',
+  ev_external: 'Open external link',
+  ai_optimize: '✦ AI optimize this board',
+  ai_run: ' (run {n})',
+  ai_hint_1: 'Suggestions only — nothing changes until you click Apply. Undo anytime.',
+  ai_hint_2: 'To edit a module directly: click it on the canvas and the right panel switches to Props; you can also drag and resize on the canvas.',
+  ai_all_good: '✓ All clear — no issues found on this board.',
+  ai_rules_note: 'Trigger conditions: align needs ≥2 siblings · spacing ≥3 · contrast needs both text & background colors · hierarchy needs 4+ font sizes · overflow when estimated text width exceeds the module by 15%.',
+  ai_summary: '{n} suggestions (5 rule categories checked)',
+  ai_apply: 'Apply',
+  ai_ignore: 'Ignore',
+  ai_manual: 'Needs manual work (no auto patch)',
+  ai_applied: '{n} applied · undoable (Ctrl+Z)',
+  stat_pages: 'Pages',
+  stat_modules: 'Modules',
+  stat_boards: 'Boards',
+  ai_local_mode: '● Local rule engine · set .env to enable remote AI',
+  ai_remote_mode: '● Remote AI configured (semantic mode available)',
+  undo_hint: 'Last {n} steps undoable · {e}',
+  export_never: 'never exported',
+  export_today: 'exported today',
+  export_days_ago: 'exported {n}d ago',
+  history_empty: 'No activity yet',
+  just_now: 'just now',
+  steps_ago: '{n} steps ago',
+  view_props: 'View props ›',
+  export_json: 'Export JSON',
+  import_json: 'Import JSON',
+  theme_title: '🎨 Theme',
+  theme_colors: 'Colors (exported as --color-*)',
+  theme_radius: 'Radius (exported as --radius-*px)',
+  theme_font: 'Font (exported as --font-base / --font-size-base)',
+  theme_font_base: 'Base font size',
+  shortcuts_title: '⌨️ Shortcuts',
+  sc_undo: 'Undo',
+  sc_redo: 'Redo',
+  sc_copy: 'Copy selection',
+  sc_paste: 'Paste',
+  sc_delete: 'Delete selection',
+  sc_esc: 'Deselect / exit preview',
+  sc_pan: 'Pan canvas',
+  sc_zoom: 'Zoom canvas',
+  sc_add_select: 'Add to selection',
+  sc_ratio: 'Lock ratio',
+  sc_dblclick: 'Edit text in place',
+  sc_arrows: 'Nudge 1px (Shift: 8px)',
+  rule_align: 'Align',
+  rule_spacing: 'Spacing',
+  rule_contrast: 'Contrast',
+  rule_hierarchy: 'Hierarchy',
+  rule_length: 'Copy',
+};
+
+// 字典（导出供单测做 zh/en 键一致性校验）
+export const DICT = { zh, en };
+
+// t(key, params)：缺失键回退中文，再回退键名；{n} 占位替换
+export function t(key: string, params?: Record<string, string | number>): string {
+  let s = (lang === 'en' ? en[key] : undefined) ?? zh[key] ?? key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) s = s.replaceAll(`{${k}}`, String(v));
+  }
+  return s;
+}
+
+// 模块标签：en 模式用 registry labelEn，缺省回退中文 label
+export function moduleLabel(m: { label: string; labelEn?: string }): string {
+  return lang === 'en' && m.labelEn ? m.labelEn : m.label;
+}
+
+// 分类标签：分类中文名是稳定 id，仅展示层翻译
+const CATEGORY_EN: Record<string, string> = {
+  基础容器: 'Basics',
+  文字与媒体: 'Text & Media',
+  表单输入: 'Forms',
+  操作与导航: 'Actions & Nav',
+  数据展示: 'Data',
+  社交与通知: 'Social',
+  设备专用: 'Device',
+};
+export function categoryLabel(cat: string): string {
+  return lang === 'en' ? (CATEGORY_EN[cat] ?? cat) : cat;
+}

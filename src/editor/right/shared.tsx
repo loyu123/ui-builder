@@ -3,19 +3,22 @@
 //   fieldInputStyle() → className="ub-field"      cardBtn → className="ub-btn"（可叠加 .ub-btn-sm/.ub-btn-danger/.ub-btn-accent/.ub-btn-ghost）
 //   tabStyle(a) → className="ub-tab" + a && " active"   panel → "ub-panel ub-panel-right"   head → "ub-head"
 import { useStore } from '../../store';
+import { t } from '../../lib/i18n';
 import type { EventSpec } from '../../types';
 
-// P2-10 · 事件动作选项（与 EventSpec.action 枚举一致）
-export const EVENT_ACTIONS: Array<{ v: EventSpec['action']; label: string }> = [
-  { v: 'none', label: '无（占位）' },
-  { v: 'navigate', label: '跳转页面' },
-  { v: 'submit', label: '提交表单' },
-  { v: 'back', label: '返回上级' },
-  { v: 'dismiss', label: '关闭弹层' },
-  { v: 'toggle', label: '切换状态' },
-  { v: 'bind', label: '绑定接口' },
-  { v: 'external', label: '打开外链' },
-];
+// P2-10 · 事件动作选项（与 EventSpec.action 枚举一致）；P3-40 · 标签走 i18n
+export function eventActions(): Array<{ v: EventSpec['action']; label: string }> {
+  return [
+    { v: 'none', label: t('ev_none') },
+    { v: 'navigate', label: t('ev_navigate') },
+    { v: 'submit', label: t('ev_submit') },
+    { v: 'back', label: t('ev_back') },
+    { v: 'dismiss', label: t('ev_dismiss') },
+    { v: 'toggle', label: t('ev_toggle') },
+    { v: 'bind', label: t('ev_bind') },
+    { v: 'external', label: t('ev_external') },
+  ];
+}
 
 export function exportJson() {
   const { project } = useStore.getState();
@@ -37,9 +40,9 @@ export function importJson(file: File) {
 }
 
 export function lastExportText(): string {
-  // 顶栏"导出工程"与历史导出时间共用 localStorage 标记
-  const t = localStorage.getItem('ub-last-export');
-  if (!t) return '从未导出';
-  const days = Math.floor((Date.now() - Number(t)) / 86400000);
-  return days === 0 ? '今天' : `${days} 天前`;
+  // 顶栏"导出工程"与历史导出时间共用 localStorage 标记；P3-40 · 文案走 i18n
+  const v = localStorage.getItem('ub-last-export');
+  if (!v) return t('export_never');
+  const days = Math.floor((Date.now() - Number(v)) / 86400000);
+  return days === 0 ? t('export_today') : t('export_days_ago', { n: days });
 }

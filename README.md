@@ -54,16 +54,17 @@ src/
 
 ## Tests
 
-**54 tests** (`npm test`):
+**63 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
 - `src/lib/tree.test.ts` — 6 tree tests (deepest container hit / blank / exclude / self-or-descendant / subtreeIds / absOrigin)
 - `src/lib/persist.test.ts` — 4 IndexedDB tests (round-trip / empty / v1→v2 migration / clearAll) via fake-indexeddb
+- `src/lib/i18n.test.ts` — 5 i18n tests (zh/en key parity / fallback / params / lang switch)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 18 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import deep-validation, rotation, events/theme, graded snapshots, boundary cases, perf smoke)
-- `src/exporter/exporter.test.ts` — 7 export e2e tests (zip layout / components / unused-component pruning / pages.json / TSX refs / slug uniqueness + hash router)
-- `src/exporter/guard.test.ts` — 2 drift-guard tests (template props ⊆ registry fields; event key format)
+- `src/exporter/exporter.test.ts` — 8 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router)
+- `src/exporter/guard.test.ts` — 4 drift-guard tests (template props ⊆ registry fields; event key format; table completeness / no stale keys)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (two pages + navigate, for manual real-build verification)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).

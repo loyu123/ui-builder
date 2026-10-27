@@ -11,8 +11,10 @@ import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
 export function AppShell() {
+  const t = useT();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
   const hydrate = useStore(s => s.actions.hydrate);
   const projectName = useStore(s => s.project.name);
@@ -95,7 +97,7 @@ export function AppShell() {
       if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
         e.preventDefault();
         st.actions.deleteNode(st.editor.selection[0]);
-        showToast('已删除模块 · Ctrl+Z 可撤销');   // P2-26 · 删除可感知
+        showToast(t('toast_deleted'));   // P2-26 · 删除可感知
         return;
       }
       // P2-20 · 方向键微调：1px，Shift +8px（400ms 内合并为一步撤销）
@@ -116,14 +118,15 @@ export function AppShell() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [previewing]);
+    // t 为模块级稳定引用（t 内部实时读当前语言），列入依赖仅为满足 exhaustive-deps
+  }, [previewing, t]);
 
   // P2-28 · 加载骨架（IndexedDB 读取通常 <100ms，仅防闪现）——所有 hooks 之后
   if (!ready) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--bg)', color: 'var(--faint)' }}>
         <div style={{ width: 28, height: 28, border: '3px solid var(--line)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'ub-spin 0.8s linear infinite' }} />
-        <span style={{ fontSize: 12 }}>正在加载设计数据…</span>
+        <span style={{ fontSize: 12 }}>{t('loading')}</span>
         <style>{'@keyframes ub-spin { to { transform: rotate(360deg); } }'}</style>
       </div>
     );
@@ -160,7 +163,7 @@ export function AppShell() {
             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 15, fontWeight: 700,
           }}>开</div>
-          <b style={{ fontSize: 14, color: 'var(--ink)' }}>界面搭建器</b>
+          <b style={{ fontSize: 14, color: 'var(--ink)' }}>{t('app_title')}</b>
 
           {/* 项目名（可编辑，橙色圆点标记） */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -185,7 +188,7 @@ export function AppShell() {
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                 {d === 'desktop' ? '🖥' : d === 'mobile' ? '📱' : '⌚'}
-                {DEVICES[d].label}
+                {t('device_' + d)}
                 <span style={{ fontSize: 10, color: d === device ? '#d1d5db' : 'var(--faint)' }}>{DEVICES[d].w}</span>
               </button>
             ))}
@@ -193,15 +196,21 @@ export function AppShell() {
 
           <span style={{ flex: 1 }} />
 
-          {/* 预览 / 导出工程 / 方向标签 */}
+          {/* 预览 / 导出工程 / 语言切换 / 方向标签 */}
           <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
-            {previewing ? '退出预览' : '预览'}
+            {previewing ? t('exit_preview') : t('preview')}
           </button>
           <button onClick={exportZip} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
-            导出工程
+            {t('export_zip')}
+          </button>
+          <button
+            onClick={() => setLang(getLang() === 'zh' ? 'en' : 'zh')}
+            title="切换界面语言 / Switch UI language"
+            className="ub-btn" style={{ flex: 'none', fontSize: 10, padding: '3px 8px' }}>
+            {getLang() === 'zh' ? 'EN' : '中'}
           </button>
           <span style={{ fontSize: 10, color: 'var(--faint)', border: '1px solid var(--line)', borderRadius: 6, padding: '3px 8px' }}>
-            方向 C · 极简中性
+            {t('direction_tag')}
           </span>
         </header>
 
@@ -235,7 +244,7 @@ export function AppShell() {
             padding: '8px 14px', background: 'var(--accent-soft)', border: '1px dashed var(--accent)',
             borderRadius: 8, fontSize: 12, color: 'var(--accent-ink)',
           }}>
-            {REGISTRY_MAP[dragType]?.label ?? dragType}
+            {REGISTRY_MAP[dragType] ? moduleLabel(REGISTRY_MAP[dragType]) : dragType}
           </div>
         ) : null}
       </DragOverlay>

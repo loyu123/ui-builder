@@ -5,9 +5,13 @@ import { useState } from 'react';
 import type * as React from 'react';
 import { useStore } from '../../store';
 import { REGISTRY_MAP, type FieldDef } from '../../modules/registry';
-import { EVENT_ACTIONS } from './shared';
+import { eventActions } from './shared';
+import { useT } from '../../lib/i18n';
 
 type NodeT = NonNullable<ReturnType<typeof getSelNode>>;
+
+// P3-40 · 拖入位置存储值保持中文兼容（存量 pages.json），展示层走 i18n
+const POS_STORE: Record<string, string> = { auto: '自动', top: '页面顶部', middle: '页面中部', bottom: '页面底部' };
 
 function getSelNode() {
   const s = useStore.getState();
@@ -53,6 +57,7 @@ function Field({ def, node }: { def: FieldDef; node: NodeT }) {
 }
 
 export function PropsPanel(): React.ReactNode {
+  const t = useT();
   const selection = useStore(s => s.editor.selection);
   const device = useStore(s => s.editor.currentDevice);
   const page = useStore(s => {
@@ -69,11 +74,11 @@ export function PropsPanel(): React.ReactNode {
   return (
     <div style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', flex: 1 }}>
       <div>
-        <div className="ub-label">当前画板</div>
+        <div className="ub-label">{t('current_board')}</div>
         <div>{page.name} · {device}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{Object.keys(board.nodes).length - 1} 个模块</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t('module_count_short', { n: Object.keys(board.nodes).length - 1 })}</div>
         <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="ub-label-sm">复制自:</span>
+          <span className="ub-label-sm">{t('copy_from')}</span>
           {(['desktop', 'mobile', 'watch'] as const).filter(d => d !== device).map(d => (
             <button key={d} onClick={() => copyBoardFrom(d)} className="ub-btn"
               style={{ flex: 'none', borderRadius: 5, fontSize: 10, padding: '2px 7px' }}>
@@ -86,7 +91,7 @@ export function PropsPanel(): React.ReactNode {
       {sel && meta ? (
         <div style={{ borderTop: '1px solid var(--line-soft)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div>
-            <span className="ub-label">选中：</span>
+            <span className="ub-label">{t('selected')}</span>
             <span className="ub-label-sm" style={{ color: 'var(--faint-3)' }}>{sel.type}</span>
             <input className="ub-field" style={{ marginTop: 4, fontWeight: 600 }} value={sel.name}
               onChange={e => { setNodeName(sel.id, e.target.value); force(n => n + 1); }} />
@@ -95,26 +100,26 @@ export function PropsPanel(): React.ReactNode {
           <div style={{ display: 'flex', gap: 14, fontSize: 12, alignItems: 'center' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <input type="checkbox" checked={Boolean(sel.hidden)} onChange={e => setNodeFlag(sel.id, 'hidden', e.target.checked)} />
-              隐藏
+              {t('flag_hidden')}
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <input type="checkbox" checked={Boolean(sel.locked)} onChange={e => setNodeFlag(sel.id, 'locked', e.target.checked)} />
-              锁定
+              {t('flag_locked')}
             </label>
             <button onClick={() => deleteNode(sel.id)} className="ub-btn ub-btn-danger"
               style={{ marginLeft: 'auto', flex: 'none', fontSize: 11, padding: '4px 10px' }}>
-              删除模块（Delete）
+              {t('delete_module')}
             </button>
           </div>
 
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: 'var(--ink-faint)', width: 64 }}>图层顺序</span>
-            {([['front', '置顶'], ['forward', '上移'], ['backward', '下移'], ['back', '置底']] as const).map(([dir, label]) => (
-              <button key={dir} onClick={() => reorderNode(sel.id, dir)} className="ub-btn ub-btn-sm">{label}</button>
+            <span style={{ fontSize: 11, color: 'var(--ink-faint)', width: 64 }}>{t('layer_order')}</span>
+            {(['front', 'forward', 'backward', 'back'] as const).map(dir => (
+              <button key={dir} onClick={() => reorderNode(sel.id, dir)} className="ub-btn ub-btn-sm">{t('order_' + dir)}</button>
             ))}
           </div>
 
-          <div className="ub-label">位置与尺寸</div>
+          <div className="ub-label">{t('pos_size')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {(['x', 'y', 'w', 'h'] as const).map(k => (
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -127,55 +132,55 @@ export function PropsPanel(): React.ReactNode {
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', width: 14 }}>↻</span>
               <input type="number" min={0} max={359} className="ub-field" style={{ padding: '5px 6px' }}
                 value={sel.rotation ?? 0} onChange={e => setNodeRotation(sel.id, Number(e.target.value))} />
-              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>度</span>
+              <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{t('deg')}</span>
             </div>
-            <button onClick={() => setNodeRotation(sel.id, 0)} className="ub-btn ub-btn-sm">归零</button>
+            <button onClick={() => setNodeRotation(sel.id, 0)} className="ub-btn ub-btn-sm">{t('reset_rotation')}</button>
           </div>
 
           {/* 功能备注（核心需求：描述该模块在最终成果中的功能） */}
-          <div className="ub-label" style={{ marginTop: 4 }}>功能备注</div>
+          <div className="ub-label" style={{ marginTop: 4 }}>{t('note_label')}</div>
           <textarea
-            placeholder="描述该模块在最终成果中所代表的功能，如：此按钮用于提交登录表单"
+            placeholder={t('note_placeholder')}
             value={sel.note ?? ''}
             onChange={e => setNodeNote(sel.id, e.target.value)}
             className="ub-field" style={{ height: 52, resize: 'vertical', fontFamily: 'inherit' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 64, fontSize: 11, color: 'var(--ink-faint)', flexShrink: 0 }}>拖入位置</span>
-            <select className="ub-field" value={sel.pos ?? '自动'} onChange={e => setNodePos(sel.id, e.target.value)}>
-              {['自动', '页面顶部', '页面中部', '页面底部'].map(o => <option key={o}>{o}</option>)}
+            <span style={{ width: 64, fontSize: 11, color: 'var(--ink-faint)', flexShrink: 0 }}>{t('drop_pos')}</span>
+            <select className="ub-field" value={sel.pos ?? POS_STORE.auto} onChange={e => setNodePos(sel.id, e.target.value)}>
+              {Object.keys(POS_STORE).map(k => <option key={k} value={POS_STORE[k]}>{t('pos_' + k)}</option>)}
             </select>
           </div>
 
           {meta.fields.length > 0 && (
             <>
-              <div className="ub-label" style={{ marginTop: 4 }}>模块属性</div>
+              <div className="ub-label" style={{ marginTop: 4 }}>{t('module_props')}</div>
               {meta.fields.map(f => <Field key={f.key + f.target} def={f} node={sel} />)}
             </>
           )}
 
-          <div className="ub-label" style={{ marginTop: 4 }}>events（事件绑定）</div>
+          <div className="ub-label" style={{ marginTop: 4 }}>{t('events_label')}</div>
           {Object.entries(sel.events).map(([ev, spec]) => (
             <div key={ev} className="ub-card-soft" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-3)' }}>{ev}</div>
               <select className="ub-field" value={spec.action}
                 onChange={e => setNodeEvent(sel.id, ev, { ...spec, action: e.target.value as typeof spec.action })}>
-                {EVENT_ACTIONS.map(a => <option key={a.v} value={a.v}>{a.label}</option>)}
+                {eventActions().map(a => <option key={a.v} value={a.v}>{a.label}</option>)}
               </select>
               {spec.action === 'navigate' && (
                 <select className="ub-field" value={spec.target ?? ''}
                   onChange={e => setNodeEvent(sel.id, ev, { ...spec, target: e.target.value || null })}>
-                  <option value="">选择目标页面…</option>
+                  <option value="">{t('select_target_page')}</option>
                   {pages.map(pg => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
                 </select>
               )}
               {spec.action !== 'none' && spec.action !== 'navigate' && (
-                <input className="ub-field" placeholder="目标 / 参数"
+                <input className="ub-field" placeholder={t('event_target_placeholder')}
                   value={spec.target ?? ''}
                   onChange={e => setNodeEvent(sel.id, ev, { ...spec, target: e.target.value || null })} />
               )}
               {spec.action !== 'none' && (
-                <input className="ub-field" placeholder="备注（可选）"
+                <input className="ub-field" placeholder={t('event_note_placeholder')}
                   value={spec.note ?? ''}
                   onChange={e => setNodeEvent(sel.id, ev, { ...spec, note: e.target.value })} />
               )}
@@ -183,28 +188,28 @@ export function PropsPanel(): React.ReactNode {
           ))}
 
           <button onClick={() => useStore.getState().actions.clearBoard()} className="ub-btn ub-btn-danger">
-            清空当前画板
+            {t('clear_board')}
           </button>
           <div className="ub-label">
-            自动保存已开启；Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
+            {t('autosave_hint')}
           </div>
         </div>
       ) : selection.length > 1 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-2)' }}>已选 {selection.length} 个模块</div>
-          <div className="ub-label">批量对齐（对齐到选中集公共边界）</div>
+          <div style={{ fontSize: 12, color: 'var(--ink-2)' }}>{t('selected_count', { n: selection.length })}</div>
+          <div className="ub-label">{t('batch_align_hint')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            {([['left', '左对齐'], ['top', '顶对齐'], ['right', '右对齐'], ['bottom', '底对齐']] as const).map(([dir, label]) => (
-              <button key={dir} onClick={() => alignSelection(dir)} className="ub-btn">{label}</button>
+            {(['left', 'top', 'right', 'bottom'] as const).map(dir => (
+              <button key={dir} onClick={() => alignSelection(dir)} className="ub-btn">{t('align_' + dir)}</button>
             ))}
           </div>
           <button onClick={() => { for (const id of selection) deleteNode(id); }} className="ub-btn ub-btn-danger">
-            删除全部（{selection.length} 个，可撤销）
+            {t('delete_all', { n: selection.length })}
           </button>
         </div>
       ) : (
         <div style={{ fontSize: 12, color: 'var(--faint)' }}>
-          未选中模块。点击画布中的模块查看与编辑属性。
+          {t('empty_selection')}
         </div>
       )}
     </div>
