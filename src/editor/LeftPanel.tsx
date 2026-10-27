@@ -1,9 +1,41 @@
 // 左栏 · C 方向样式：页面（带宽标注）/ 组件分组（计数+折叠）/ 模块库（两列网格缩略）
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type * as React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useStore, DEVICES } from '../store';
 import { REGISTRY, REGISTRY_MAP } from '../modules/registry';
+import type { Board } from '../types';
+
+// P2-29 · 图层树行：递归渲染节点层级，点击选中
+function LayerRow({ id, board, depth }: { id: string; board: Board; depth: number }): ReactNode {
+  const n = board.nodes[id];
+  const selection = useStore(s => s.editor.selection);
+  const select = useStore(s => s.actions.select);
+  if (!n) return null;
+  const selected = selection.includes(id);
+  return (
+    <>
+      <div
+        onClick={() => select([id])}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '3px 8px', paddingLeft: depth * 12 + 8,
+          fontSize: 11, cursor: 'pointer', lineHeight: 1.4,
+          background: selected ? '#fff1e6' : 'transparent',
+          color: selected ? '#c2410c' : n.hidden ? '#d8d2c8' : '#374151',
+          borderLeft: selected ? '2px solid #f97316' : '2px solid transparent',
+        }}>
+        <span style={{ fontSize: 9, color: '#b9b2a6', width: 8, flexShrink: 0 }}>{n.children.length ? '▾' : '·'}</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
+        <span style={{ fontSize: 9, color: '#b9b2a6', flexShrink: 0 }}>
+          {REGISTRY_MAP[n.type]?.label ?? n.type}
+          {n.locked ? ' 🔒' : ''}{n.hidden ? ' (隐藏)' : ''}
+        </span>
+      </div>
+      {n.children.map(cid => <LayerRow key={cid} id={cid} board={board} depth={depth + 1} />)}
+    </>
+  );
+}
 
 // —— 模块缩略图形（C 方向：tile 内画小形状） ——
 function Thumb({ type }: { type: string }): React.ReactNode {
@@ -99,6 +131,10 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
   const [kw, setKw] = useState('');
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
   const { setPage, addPage, renamePage, deletePage } = useStore(s => s.actions);
+  const layerRoot = useStore(s => {
+    const pg = s.project.pages.find(p => p.id === s.editor.currentPageId) ?? s.project.pages[0];
+    return pg.boards[s.editor.currentDevice];
+  });
   const devW = DEVICES[device].w;
 
   if (previewing) return null;   // hooks 之后才允许条件 return（rules-of-hooks）
@@ -141,6 +177,15 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
           </div>
         ))}
         <div style={{ padding: '1px 10px 4px', fontSize: 9, color: '#c9c2b6' }}>双击重命名</div>
+      </div>
+
+      {/* P2-29 · 图层树：当前画板节点结构，点击选中深层模块 */}
+      <div style={{ ...head, marginTop: 2 }}>图层（{device === 'desktop' ? '电脑' : device === 'mobile' ? '手机' : '手表'}）</div>
+      <div style={{ borderBottom: '1px solid #f0ebe2', maxHeight: 168, overflowY: 'auto', paddingBottom: 4 }}>
+        {layerRoot.children.map(cid => <LayerRow key={cid} id={cid} board={layerRoot} depth={0} />)}
+        {layerRoot.children.length === 0 && (
+          <div style={{ padding: '4px 10px 6px', fontSize: 10, color: '#c9c2b6' }}>画板为空，从下方拖入模块</div>
+        )}
       </div>
 
       {/* 组件分组（C：分类 + 计数 + 折叠） */}

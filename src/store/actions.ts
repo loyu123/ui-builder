@@ -290,6 +290,30 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       set({ project: p });
     },
 
+    // P2-30 · 多选批量对齐：把所有选中节点对齐到选中集的公共边界（单次快照可整体撤销）
+    alignSelection: dir => {
+      const s = get();
+      if (s.editor.selection.length < 2) return;
+      hist.pushHistory('align');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const nodes = s.editor.selection.map(id => board.nodes[id]).filter(n => n && n.parentId);
+        if (nodes.length < 2) return;
+        const minX = Math.min(...nodes.map(n => n.frame.x));
+        const minY = Math.min(...nodes.map(n => n.frame.y));
+        const maxX = Math.max(...nodes.map(n => n.frame.x + n.frame.w));
+        const maxY = Math.max(...nodes.map(n => n.frame.y + n.frame.h));
+        for (const n of nodes) {
+          if (dir === 'left') n.frame.x = minX;
+          if (dir === 'right') n.frame.x = maxX - n.frame.w;
+          if (dir === 'top') n.frame.y = minY;
+          if (dir === 'bottom') n.frame.y = maxY - n.frame.h;
+        }
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
     // P2-10 · 事件绑定编辑（action/target/note；navigate 的 target 存页面 id）
     setNodeEvent: (id, ev, spec) => {
       const s = get();

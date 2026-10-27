@@ -331,7 +331,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation, deleteNode } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation, deleteNode, alignSelection } = useStore(s => s.actions);
   const pages = useStore(s => s.project.pages);
   const [, force] = useState(0);
 
@@ -483,6 +483,21 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
               <div style={{ fontSize: 11, color: '#a8a199' }}>
                 自动保存已开启；Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
               </div>
+            </div>
+          ) : selection.length > 1 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 12, color: '#374151' }}>已选 {selection.length} 个模块</div>
+              <div style={{ fontSize: 11, color: '#a8a199' }}>批量对齐（对齐到选中集公共边界）</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {([['left', '左对齐'], ['top', '顶对齐'], ['right', '右对齐'], ['bottom', '底对齐']] as const).map(([dir, label]) => (
+                  <button key={dir} onClick={() => alignSelection(dir)} style={cardBtn}>{label}</button>
+                ))}
+              </div>
+              <button
+                onClick={() => { for (const id of selection) deleteNode(id); }}
+                style={{ ...cardBtn, color: '#b91c1c', borderColor: '#fecaca' }}>
+                删除全部（{selection.length} 个，可撤销）
+              </button>
             </div>
           ) : (
             <div style={{ fontSize: 12, color: '#a8a199' }}>

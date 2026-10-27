@@ -50,6 +50,7 @@ export interface Actions {
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
   setNodeRotation: (id: string, deg: number) => void;
+  alignSelection: (dir: 'left' | 'right' | 'top' | 'bottom') => void;
   setNodeEvent: (id: string, ev: string, spec: EventSpec) => void;
   updateTheme: (patch: {
     colors?: Record<string, string>;
