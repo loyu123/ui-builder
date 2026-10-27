@@ -37,12 +37,19 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
   const zoom = useStore(s => s.editor.zoom);
   const pan = useStore(s => s.editor.pan);
   const selection = useStore(s => s.editor.selection);
+  const pages = useStore(s => s.project.pages);
+  const [previewPageId, setPreviewPageId] = useState<string | null>(null);   // 预览内路由：navigate 跳转目标页
   const page = useStore(s => {
-    const pid = s.editor.currentPageId;
+    const pid = previewing ? (previewPageId ?? s.editor.currentPageId) : s.editor.currentPageId;
     return s.project.pages.find(pg => pg.id === pid) ?? s.project.pages[0];
   });
   const board = page.boards[device];
   const dev = DEVICES[device];
+
+  // 退出预览时重置预览路由
+  useEffect(() => {
+    if (!previewing) setPreviewPageId(null);
+  }, [previewing]);
 
   const boardRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -334,6 +341,15 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
       <div
         key={n.id}
         onPointerDown={e => beginGesture(e, 'move', n)}
+        onClick={e => {
+          // 预览互动：navigate 事件真实切换预览页
+          if (!previewing) return;
+          const ev = Object.values(n.events ?? {}).find(s => s.action !== 'none');
+          if (ev?.action === 'navigate' && ev.target) {
+            e.stopPropagation();
+            setPreviewPageId(ev.target);
+          }
+        }}
         onDoubleClick={e => {
           e.stopPropagation();
           if (previewing) return;   // 预览模式下不允许就地编辑
@@ -350,7 +366,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           cursor: 'grab',
         }}
       >
-        <ModuleRenderer node={n} />
+        <ModuleRenderer node={n} interactive={previewing} />
         {/* 功能备注气泡（PP-03） */}
         {n.note && !previewing && (
           <div style={{
@@ -436,6 +452,27 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
             </button>
           ))}
           <span style={{ fontSize: 10, color: '#c9c2b6' }}>Ctrl+滚轮</span>
+        </div>
+      )}
+
+      {/* 预览状态条：页面指示 + 手动切换（替代编辑信息条） */}
+      {previewing && (
+        <div style={{
+          position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 30,
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: '#2a3548', color: '#e6ebf2', border: '1px solid #f97316',
+          borderRadius: 999, padding: '5px 14px', fontSize: 12,
+          boxShadow: '0 4px 14px rgba(0,0,0,.35)',
+        }}>
+          <span style={{ color: '#f97316' }}>● 预览</span>
+          <select
+            value={page.id}
+            onChange={e => setPreviewPageId(e.target.value)}
+            style={{ background: 'transparent', color: '#e6ebf2', border: 'none', outline: 'none', fontSize: 12, cursor: 'pointer' }}
+          >
+            {pages.map(pg => <option key={pg.id} value={pg.id} style={{ color: '#1f2328' }}>{pg.name}</option>)}
+          </select>
+          <span style={{ fontSize: 10, color: '#9aa7b8' }}>Esc 退出 · 可输入/点击互动</span>
         </div>
       )}
 

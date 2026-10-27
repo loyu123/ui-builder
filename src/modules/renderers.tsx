@@ -5,7 +5,7 @@ import type { Node } from '../types';
 
 function safeNum(v: unknown, d = 0): number { return typeof v === 'number' ? v : d; }
 
-export function ModuleRenderer({ node }: { node: Node }) {
+export function ModuleRenderer({ node, interactive = false }: { node: Node; interactive?: boolean }) {
   const s = node.style as React.CSSProperties;
   const p = node.props;
 
@@ -40,25 +40,48 @@ export function ModuleRenderer({ node }: { node: Node }) {
       );
     }
 
-    // —— 表单输入 ——
+    // —— 表单输入（interactive：预览模式渲染真表单控件，可输入/可选） ——
     case 'input':
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, border: '1px solid #e5e7eb', padding: '0 10px', boxSizing: 'border-box', ...s }}>
           {p.label ? <span style={{ fontSize: 11, color: '#6b7280' }}>{String(p.label)}</span> : null}
-          <span style={{ color: '#9ca3af' }}>{String(p.placeholder ?? '')}</span>
+          {interactive ? (
+            <input
+              placeholder={String(p.placeholder ?? '')}
+              onPointerDown={e => e.stopPropagation()}
+              style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#374151', width: '100%', padding: 0 }}
+            />
+          ) : (
+            <span style={{ color: '#9ca3af' }}>{String(p.placeholder ?? '')}</span>
+          )}
         </div>
       );
     case 'password':
-      return <PasswordModule node={node} style={s} />;
+      return <PasswordModule node={node} style={s} interactive={interactive} />;
     case 'textarea':
-      return (
+      return interactive ? (
+        <textarea
+          placeholder={String(p.placeholder ?? '')}
+          onPointerDown={e => e.stopPropagation()}
+          style={{ width: '100%', height: '100%', border: '1px solid #e5e7eb', padding: 8, boxSizing: 'border-box', color: '#374151', fontSize: 13, resize: 'none', outline: 'none', ...s }}
+        />
+      ) : (
         <div style={{ width: '100%', height: '100%', border: '1px solid #e5e7eb', padding: 8, boxSizing: 'border-box', color: '#9ca3af', overflow: 'hidden', ...s }}>
           {String(p.placeholder ?? '')}
         </div>
       );
     case 'select': {
       const opts = String(p.options ?? '').split(',').filter(Boolean);
-      return (
+      return interactive ? (
+        <select
+          defaultValue=""
+          onPointerDown={e => e.stopPropagation()}
+          style={{ width: '100%', height: '100%', border: '1px solid #e5e7eb', padding: '0 8px', boxSizing: 'border-box', color: '#374151', fontSize: 13, background: '#fff', outline: 'none', ...s }}
+        >
+          <option value="" disabled>{opts[0] || '请选择'}</option>
+          {opts.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
         <div style={{ width: '100%', height: '100%', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 10px', boxSizing: 'border-box', ...s }}>
           <span style={{ color: '#374151' }}>{opts[0] || '请选择'}</span>
           <span style={{ color: '#9ca3af' }}>▾</span>
@@ -210,18 +233,27 @@ export function ModuleRenderer({ node }: { node: Node }) {
 
 // —— 带局部交互态的模块 ——
 
-function PasswordModule({ node, style }: { node: Node; style: React.CSSProperties }) {
+function PasswordModule({ node, style, interactive = false }: { node: Node; style: React.CSSProperties; interactive?: boolean }) {
   const [show, setShow] = useState(false);
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, border: '1px solid #e5e7eb', padding: '0 10px', boxSizing: 'border-box', ...style }}>
       {node.props.label ? <span style={{ fontSize: 11, color: '#6b7280' }}>{String(node.props.label)}</span> : null}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ color: '#9ca3af', letterSpacing: show ? 0 : 2 }}>
-          {show ? String(node.props.placeholder ?? '') : '••••••'}
-        </span>
+        {interactive ? (
+          <input
+            type={show ? 'text' : 'password'}
+            placeholder={String(node.props.placeholder ?? '')}
+            onPointerDown={e => e.stopPropagation()}
+            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#374151', width: '100%', padding: 0, letterSpacing: show ? 0 : 2 }}
+          />
+        ) : (
+          <span style={{ color: '#9ca3af', letterSpacing: show ? 0 : 2 }}>
+            {show ? String(node.props.placeholder ?? '') : '••••••'}
+          </span>
+        )}
         <span
           onClick={e => { e.stopPropagation(); setShow(v => !v); }}
-          style={{ cursor: 'pointer', fontSize: 12 }}
+          style={{ cursor: 'pointer', fontSize: 12, flexShrink: 0, marginLeft: 4 }}
         >👁</span>
       </div>
     </div>
