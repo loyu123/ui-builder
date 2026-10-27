@@ -328,7 +328,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation, deleteNode } = useStore(s => s.actions);
   const pages = useStore(s => s.project.pages);
   const [, force] = useState(0);
 
@@ -383,7 +383,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
                   style={{ ...fieldInputStyle(), marginTop: 4, fontWeight: 600 }} />
               </div>
 
-              <div style={{ display: 'flex', gap: 14, fontSize: 12 }}>
+              <div style={{ display: 'flex', gap: 14, fontSize: 12, alignItems: 'center' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <input type="checkbox" checked={Boolean(sel.hidden)} onChange={e => setNodeFlag(sel.id, 'hidden', e.target.checked)} />
                   隐藏
@@ -392,6 +392,10 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
                   <input type="checkbox" checked={Boolean(sel.locked)} onChange={e => setNodeFlag(sel.id, 'locked', e.target.checked)} />
                   锁定
                 </label>
+                <button onClick={() => deleteNode(sel.id)}
+                  style={{ marginLeft: 'auto', border: '1px solid #fecaca', background: '#fff', color: '#b91c1c', borderRadius: 8, fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>
+                  删除模块（Delete）
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
