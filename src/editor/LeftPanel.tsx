@@ -19,17 +19,14 @@ function LayerRow({ id, board, depth }: { id: string; board: Board; depth: numbe
         role="button"
         aria-selected={selected}
         onClick={() => select([id])}
+        className={`ub-row ub-row-layer${selected ? ' active' : ''}`}
         style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '3px 8px', paddingLeft: depth * 12 + 8,
-          fontSize: 11, cursor: 'pointer', lineHeight: 1.4,
-          background: selected ? '#fff1e6' : 'transparent',
-          color: selected ? '#c2410c' : n.hidden ? '#d8d2c8' : '#374151',
-          borderLeft: selected ? '2px solid #f97316' : '2px solid transparent',
+          paddingLeft: depth * 12 + 8,   // P1-17 · 层级缩进仍需动态内联
+          color: selected ? undefined : n.hidden ? 'var(--ghost)' : undefined,
         }}>
-        <span style={{ fontSize: 9, color: '#b9b2a6', width: 8, flexShrink: 0 }}>{n.children.length ? '▾' : '·'}</span>
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
-        <span style={{ fontSize: 9, color: '#b9b2a6', flexShrink: 0 }}>
+        <span style={{ fontSize: 9, color: 'var(--faint-2)', width: 8, flexShrink: 0 }}>{n.children.length ? '▾' : '·'}</span>
+        <span className="ub-row-label">{n.name}</span>
+        <span style={{ fontSize: 9, color: 'var(--faint-2)', flexShrink: 0 }}>
           {REGISTRY_MAP[n.type]?.label ?? n.type}
           {n.locked ? ' 🔒' : ''}{n.hidden ? ' (隐藏)' : ''}
         </span>
@@ -109,8 +106,8 @@ function ModuleTile({ type }: { type: string }) {
       {...attributes}
       title={`${meta.label}（${meta.w}×${meta.h}${meta.isContainer ? '，容器' : ''}）`}
       style={{
-        border: '1px solid #ece7dd', borderRadius: 10, padding: '10px 6px 7px',
-        background: isDragging ? '#fff7ed' : '#ffffff', cursor: 'grab',
+        border: '1px solid var(--line)', borderRadius: 10, padding: '10px 6px 7px',
+        background: isDragging ? 'var(--accent-soft)' : 'var(--panel)', cursor: 'grab',
         userSelect: 'none', touchAction: 'none',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         minHeight: 52, justifyContent: 'center',
@@ -119,7 +116,7 @@ function ModuleTile({ type }: { type: string }) {
       <div style={{ width: 36, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         <Thumb type={type} />
       </div>
-      <span style={{ fontSize: 11, color: '#374151', lineHeight: 1 }}>{meta.label}</span>
+      <span style={{ fontSize: 11, color: 'var(--ink-2)', lineHeight: 1 }}>{meta.label}</span>
     </div>
   );
 }
@@ -150,100 +147,85 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
   });
 
   return (
-    <aside style={panel}>
+    <aside className="ub-panel ub-panel-left">
       {/* 页面（C：名称 + 设备宽度标注） */}
-      <div style={{ ...head, display: 'flex', alignItems: 'center' }}>
+      <div className="ub-head" style={{ padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1, color: 'var(--muted)', userSelect: 'none', display: 'flex', alignItems: 'center' }}>
         页面
         <span title="新建页面" onClick={() => addPage()}
-          style={{ marginLeft: 'auto', cursor: 'pointer', color: '#f97316', fontWeight: 700, padding: '0 4px' }}>＋</span>
+          style={{ marginLeft: 'auto', cursor: 'pointer', color: 'var(--accent)', fontWeight: 700, padding: '0 4px' }}>＋</span>
       </div>
       <div>
         {pages.map(pg => (
           <div key={pg.id}
             onClick={() => setPage(pg.id)}
             onDoubleClick={() => { const name = window.prompt('重命名页面', pg.name); if (name) renamePage(pg.id, name); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '5px 10px', fontSize: 12, cursor: 'pointer',
-              background: pg.id === currentPageId ? '#fff1e6' : 'transparent',
-              color: pg.id === currentPageId ? '#c2410c' : '#374151',
-              borderLeft: pg.id === currentPageId ? '2px solid #f97316' : '2px solid transparent',
-            }}>
-            <span style={{ fontSize: 10, color: pg.id === currentPageId ? '#f97316' : '#c9c2b6' }}>□</span>
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pg.name}</span>
-            <span style={{ fontSize: 10, color: '#b9b2a6' }}>{devW}</span>
+            className={`ub-row ub-row-page${pg.id === currentPageId ? ' active' : ''}`}>
+            <span style={{ fontSize: 10, color: pg.id === currentPageId ? 'var(--accent)' : 'var(--faint-3)' }}>□</span>
+            <span className="ub-row-label">{pg.name}</span>
+            <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>{devW}</span>
             {pages.length > 1 && (
               <span title="删除" onClick={e => { e.stopPropagation(); if (window.confirm(`删除「${pg.name}」？`)) deletePage(pg.id); }}
-                style={{ color: '#d8d2c8', fontSize: 11 }}>✕</span>
+                style={{ color: 'var(--ghost)', fontSize: 11 }}>✕</span>
             )}
           </div>
         ))}
-        <div style={{ padding: '1px 10px 4px', fontSize: 9, color: '#c9c2b6' }}>双击重命名</div>
+        <div style={{ padding: '1px 10px 4px', fontSize: 9, color: 'var(--faint-3)' }}>双击重命名</div>
       </div>
 
       {/* P2-29 · 图层树：当前画板节点结构，点击选中深层模块 */}
-      <div style={{ ...head, marginTop: 2 }}>图层（{device === 'desktop' ? '电脑' : device === 'mobile' ? '手机' : '手表'}）</div>
-      <div style={{ borderBottom: '1px solid #f0ebe2', maxHeight: 168, overflowY: 'auto', paddingBottom: 4 }}>
+      <div className="ub-head" style={{ marginTop: 2, padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1, color: 'var(--muted)', userSelect: 'none' }}>图层（{device === 'desktop' ? '电脑' : device === 'mobile' ? '手机' : '手表'}）</div>
+      <div style={{ borderBottom: '1px solid var(--line-soft)', maxHeight: 168, overflowY: 'auto', paddingBottom: 4 }}>
         {(() => {
           const root = layerRoot.nodes[layerRoot.rootId];
           if (!root || root.children.length === 0) {
-            return <div style={{ padding: '4px 10px 6px', fontSize: 10, color: '#c9c2b6' }}>画板为空，从下方拖入模块</div>;
+            return <div style={{ padding: '4px 10px 6px', fontSize: 10, color: 'var(--faint-3)' }}>画板为空，从下方拖入模块</div>;
           }
           return root.children.map(cid => <LayerRow key={cid} id={cid} board={layerRoot} depth={0} />);
         })()}
       </div>
 
       {/* 组件分组（C：分类 + 计数 + 折叠） */}
-      <div style={{ ...head, marginTop: 2 }}>组件分组</div>
-      <div style={{ borderBottom: '1px solid #f0ebe2', paddingBottom: 4 }}>
+      <div className="ub-head" style={{ marginTop: 2, padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1, color: 'var(--muted)', userSelect: 'none' }}>组件分组</div>
+      <div style={{ borderBottom: '1px solid var(--line-soft)', paddingBottom: 4 }}>
         {categories.map(cat => {
           const n = filtered.filter(m => m.category === cat).length;
           const open = openCats.has(cat);
           return (
             <div key={cat}
               onClick={() => toggleCat(cat)}
-              style={{ display: 'flex', alignItems: 'center', padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: '#374151' }}>
-              <span style={{ fontSize: 9, color: '#b9b2a6', width: 10 }}>{open ? '▾' : '▸'}</span>
+              style={{ display: 'flex', alignItems: 'center', padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--ink-2)' }}>
+              <span style={{ fontSize: 9, color: 'var(--faint-2)', width: 10 }}>{open ? '▾' : '▸'}</span>
               <span style={{ flex: 1 }}>{cat}</span>
-              <span style={{ fontSize: 10, color: '#b9b2a6' }}>{n}</span>
+              <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>{n}</span>
             </div>
           );
         })}
       </div>
 
       {/* 模块库（C：搜索 + 两列网格缩略） */}
-      <div style={{ ...head, marginTop: 2, display: 'flex', alignItems: 'center' }}>
+      <div className="ub-head" style={{ marginTop: 2, padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1, color: 'var(--muted)', userSelect: 'none', display: 'flex', alignItems: 'center' }}>
         模块库
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#b9b2a6', letterSpacing: 0 }}>{PALETTE.length} 个</span>
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--faint-2)', letterSpacing: 0 }}>{PALETTE.length} 个</span>
       </div>
       <div style={{ padding: '0 10px 6px' }}>
         <input placeholder="搜索模块，如「头像」" value={kw} onChange={e => setKw(e.target.value)}
-          style={{ width: '100%', border: '1px solid #ece7dd', borderRadius: 8, padding: '6px 10px', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fbf9f5' }} />
+          className="ub-field" style={{ borderRadius: 8, padding: '6px 10px', background: 'var(--bg-input)' }} />
       </div>
       <div style={{ padding: '0 10px 10px', flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {(openCats.size ? categories.filter(c => openCats.has(c)) : categories).map(cat => (
           <div key={cat} style={{ marginBottom: 8 }}>
-            {openCats.size > 0 && <div style={{ fontSize: 10, color: '#b9b2a6', margin: '4px 2px' }}>{cat}</div>}
+            {openCats.size > 0 && <div style={{ fontSize: 10, color: 'var(--faint-2)', margin: '4px 2px' }}>{cat}</div>}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
               {filtered.filter(m => m.category === cat).map(m => <ModuleTile key={m.type} type={m.type} />)}
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <div style={{ fontSize: 11, color: '#c9c2b6', padding: 8 }}>无匹配模块</div>}
+        {filtered.length === 0 && <div style={{ fontSize: 11, color: 'var(--faint-3)', padding: 8 }}>无匹配模块</div>}
       </div>
 
-      <div style={{ padding: '8px 12px', fontSize: 10, color: '#b9b2a6', borderTop: '1px solid #f0ebe2' }}>
+      <div style={{ padding: '8px 12px', fontSize: 10, color: 'var(--faint-2)', borderTop: '1px solid var(--line-soft)' }}>
         拖动模块到画布即可创建 · 当前 {PALETTE.length} 个模块
       </div>
     </aside>
   );
 }
-
-const panel: React.CSSProperties = {
-  width: 232, flexShrink: 0, background: '#ffffff',
-  borderRight: '1px solid #ece7dd', display: 'flex', flexDirection: 'column', minHeight: 0,
-};
-const head: React.CSSProperties = {
-  padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1,
-  color: '#6b7280', userSelect: 'none', flexShrink: 0,
-};

@@ -1,33 +1,9 @@
-// 右栏共享样式与 JSON 导入导出工具（P1-13 拆分自 RightPanel）
-import type * as React from 'react';
-import type { EventSpec } from '../../types';
+// 右栏共享工具（P1-13 拆分自 RightPanel）
+// P1-17 · 样式对象（fieldInputStyle/cardBtn/tabStyle/panel/head）已迁往 index.css 的 .ub-* 类名体系：
+//   fieldInputStyle() → className="ub-field"      cardBtn → className="ub-btn"（可叠加 .ub-btn-sm/.ub-btn-danger/.ub-btn-accent/.ub-btn-ghost）
+//   tabStyle(a) → className="ub-tab" + a && " active"   panel → "ub-panel ub-panel-right"   head → "ub-head"
 import { useStore } from '../../store';
-
-export function fieldInputStyle(): React.CSSProperties {
-  return { width: '100%', border: '1px solid #ece7dd', borderRadius: 6, padding: '5px 8px', fontSize: 12, background: '#fff' };
-}
-
-export const cardBtn: React.CSSProperties = {
-  border: '1px solid #ece7dd', background: '#fff', borderRadius: 8,
-  fontSize: 12, padding: '6px 0', flex: 1, cursor: 'pointer', color: '#374151',
-};
-
-export const tabStyle = (active: boolean): React.CSSProperties => ({
-  cursor: 'pointer', paddingBottom: 2,
-  borderBottom: active ? '2px solid #f97316' : '2px solid transparent',
-  color: active ? '#1f2328' : '#a8a199',
-  fontSize: 12,
-});
-
-export const panel: React.CSSProperties = {
-  width: 288, flexShrink: 0, background: '#ffffff',
-  borderLeft: '1px solid #ece7dd', display: 'flex', flexDirection: 'column', minHeight: 0,
-};
-
-export const head: React.CSSProperties = {
-  padding: '10px 12px', fontSize: 13,
-  borderBottom: '1px solid #ece7dd', flexShrink: 0,
-};
+import type { EventSpec } from '../../types';
 
 // P2-10 · 事件动作选项（与 EventSpec.action 枚举一致）
 export const EVENT_ACTIONS: Array<{ v: EventSpec['action']; label: string }> = [

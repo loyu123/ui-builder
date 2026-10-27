@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { AiPanel } from './right/AiPanel';
 import { PropsPanel } from './right/PropsPanel';
-import { head, panel, tabStyle } from './right/shared';
+
+// P1-17 · 面板/页签样式走 index.css 的 .ub-* 类
+const tabCls = (active: boolean) => `ub-tab${active ? ' active' : ''}`;
 
 export function RightPanel({ previewing }: { previewing?: boolean }) {
   const selection = useStore(s => s.editor.selection);
@@ -21,14 +23,14 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   if (previewing) return null;
 
   return (
-    <aside style={panel}>
+    <aside className="ub-panel ub-panel-right">
       {/* C：AI 设计助手标题 + 属性入口 */}
-      <div style={{ ...head, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: '#f97316' }}>✦</span>
-        <b style={{ color: '#1f2328', letterSpacing: 0 }}>AI 设计助手</b>
+      <div className="ub-head ub-head-line" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ color: 'var(--accent)' }}>✦</span>
+        <b style={{ color: 'var(--ink)', letterSpacing: 0 }}>AI 设计助手</b>
         <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <span onClick={() => setTab('ai')} style={tabStyle(tab === 'ai')}>助手</span>
-          <span onClick={() => setTab('props')} style={tabStyle(tab === 'props')}>属性</span>
+          <span onClick={() => setTab('ai')} className={tabCls(tab === 'ai')}>助手</span>
+          <span onClick={() => setTab('props')} className={tabCls(tab === 'props')}>属性</span>
         </span>
       </div>
 

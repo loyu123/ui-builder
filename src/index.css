@@ -1,15 +1,32 @@
-/* WS-02 · C 方向（极简中性 + 橙色强调）设计变量 */
+/* WS-02 · C 方向（极简中性 + 橙色强调）设计变量
+   P1-17 · 变量与编辑器真实用色（暖灰系）对齐，.ub-* 类名体系统一引用变量；
+   各 UI 文件不再复制内联色值，换肤只改这里。 */
 :root {
   --ink: #1f2328;
   --ink-2: #374151;
+  --ink-3: #57534e;
+  --ink-faint: #8a8378;
   --muted: #6b7280;
-  --line: #e5e7eb;
-  --bg: #fafafa;
+  --faint: #a8a199;
+  --faint-2: #b9b2a6;
+  --faint-3: #c9c2b6;
+  --ghost: #d8d2c8;
+  --line: #ece7dd;
+  --line-soft: #f0ebe2;
+  --bg: #faf9f7;
+  --bg-soft: #f5f2ec;
+  --bg-input: #fbf9f5;
+  --bg-card: #faf8f4;
   --panel: #ffffff;
   --accent: #f97316;
   --accent-soft: #fff7ed;
+  --accent-row: #fff1e6;
+  --accent-ink: #c2410c;
+  --danger: #b91c1c;
+  --danger-line: #fecaca;
+  --radius-sm: 6px;
   --radius: 8px;
-  --radius-lg: 12px;
+  --radius-lg: 10px;
   --font: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 
@@ -22,3 +39,49 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ---------- P1-17 · .ub-* 编辑器类名体系 ---------- */
+
+/* 侧栏骨架 */
+.ub-panel { background: var(--panel); flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; }
+.ub-panel-left { width: 232px; border-right: 1px solid var(--line); }
+.ub-panel-right { width: 288px; border-left: 1px solid var(--line); }
+
+/* 分区标题（.ub-head-line 需要底边线的场合使用） */
+.ub-head { padding: 10px 12px; font-size: 13px; flex-shrink: 0; }
+.ub-head-line { border-bottom: 1px solid var(--line); }
+
+/* 可选中列表行（页面行 / 图层行） */
+.ub-row { display: flex; align-items: center; cursor: pointer; color: var(--ink-2); border-left: 2px solid transparent; }
+.ub-row.active { background: var(--accent-row); color: var(--accent-ink); border-left-color: var(--accent); }
+.ub-row-page { gap: 6px; padding: 5px 10px; font-size: 12px; }
+.ub-row-layer { gap: 5px; padding: 3px 8px; font-size: 11px; line-height: 1.4; }
+.ub-row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 表单控件（fieldInputStyle 迁移） */
+.ub-field { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 12px; background: var(--panel); outline: none; }
+
+/* 按钮：.ub-btn 基类 + 修饰（cardBtn 迁移） */
+.ub-btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); border-radius: var(--radius); font-size: 12px; padding: 6px 0; flex: 1; cursor: pointer; }
+.ub-btn-sm { padding: 3px 7px; font-size: 11px; flex: none; }
+.ub-btn-pad { padding: 6px 16px; font-size: 13px; }
+.ub-btn-accent { border: none; background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.ub-btn-danger { color: var(--danger); border-color: var(--danger-line); }
+.ub-btn-ghost { border: none; background: transparent; color: var(--accent); flex: none; }
+
+/* 页签（tabStyle 迁移） */
+.ub-tab { cursor: pointer; padding-bottom: 2px; border-bottom: 2px solid transparent; color: var(--faint); font-size: 12px; }
+.ub-tab.active { border-bottom-color: var(--accent); color: var(--ink); }
+
+/* 卡片 / 折叠块 */
+.ub-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 10px; background: var(--panel); }
+.ub-card-soft { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px; background: var(--bg-card); }
+.ub-details { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 8px 10px; background: var(--panel); }
+.ub-details > summary { font-size: 12px; color: var(--ink-3); cursor: pointer; user-select: none; }
+
+/* 键位标签 */
+.ub-kbd { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 10px; font-family: inherit; justify-self: start; }
+
+/* 次要文字 */
+.ub-label { font-size: 11px; color: var(--faint); }
+.ub-label-sm { font-size: 10px; color: var(--faint); }

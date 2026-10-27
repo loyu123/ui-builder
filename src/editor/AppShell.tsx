@@ -121,8 +121,8 @@ export function AppShell() {
   // P2-28 · 加载骨架（IndexedDB 读取通常 <100ms，仅防闪现）——所有 hooks 之后
   if (!ready) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#faf9f7', color: '#a8a199' }}>
-        <div style={{ width: 28, height: 28, border: '3px solid #ece7dd', borderTopColor: '#f97316', borderRadius: '50%', animation: 'ub-spin 0.8s linear infinite' }} />
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--bg)', color: 'var(--faint)' }}>
+        <div style={{ width: 28, height: 28, border: '3px solid var(--line)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'ub-spin 0.8s linear infinite' }} />
         <span style={{ fontSize: 12 }}>正在加载设计数据…</span>
         <style>{'@keyframes ub-spin { to { transform: rotate(360deg); } }'}</style>
       </div>
@@ -148,45 +148,45 @@ export function AppShell() {
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#faf9f7' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
         {/* C 方向顶栏 */}
         <header style={{
           height: 46, flexShrink: 0, display: 'flex', alignItems: 'center',
-          gap: 12, padding: '0 14px', background: '#ffffff', borderBottom: '1px solid #ece7dd',
+          gap: 12, padding: '0 14px', background: 'var(--panel)', borderBottom: '1px solid var(--line)',
         }}>
           {/* Logo（C：橙色方块"开"） */}
           <div style={{
-            width: 28, height: 28, borderRadius: 7, background: '#f97316',
+            width: 28, height: 28, borderRadius: 7, background: 'var(--accent)',
             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 15, fontWeight: 700,
           }}>开</div>
-          <b style={{ fontSize: 14, color: '#1f2328' }}>界面搭建器</b>
+          <b style={{ fontSize: 14, color: 'var(--ink)' }}>界面搭建器</b>
 
           {/* 项目名（可编辑，橙色圆点标记） */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 3, background: '#f97316' }} />
+            <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--accent)' }} />
             <input
               value={projectName}
               onChange={e => useStore.getState().actions.setProjectName(e.target.value)}
-              style={{ border: '1px solid transparent', background: 'transparent', borderRadius: 6, padding: '3px 8px', fontSize: 12, color: '#57534e', width: 140, outline: 'none' }}
-              onFocus={e => { e.currentTarget.style.borderColor = '#ece7dd'; e.currentTarget.style.background = '#fff'; }}
+              style={{ border: '1px solid transparent', background: 'transparent', borderRadius: 6, padding: '3px 8px', fontSize: 12, color: 'var(--ink-3)', width: 140, outline: 'none' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--panel)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
             />
           </span>
 
           {/* 设备切换（C：居中，选中深色） */}
-          <span style={{ display: 'flex', gap: 4, margin: '0 auto', background: '#f5f2ec', borderRadius: 9, padding: 3 }}>
+          <span style={{ display: 'flex', gap: 4, margin: '0 auto', background: 'var(--bg-soft)', borderRadius: 9, padding: 3 }}>
             {(Object.keys(DEVICES) as DeviceId[]).map(d => (
               <button key={d} onClick={() => setDevice(d)}
                 style={{
                   border: 'none', borderRadius: 7, padding: '5px 16px', fontSize: 13, cursor: 'pointer',
-                  background: d === device ? '#1f2328' : 'transparent',
-                  color: d === device ? '#ffffff' : '#57534e',
+                  background: d === device ? 'var(--ink)' : 'transparent',
+                  color: d === device ? '#ffffff' : 'var(--ink-3)',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
                 {d === 'desktop' ? '🖥' : d === 'mobile' ? '📱' : '⌚'}
                 {DEVICES[d].label}
-                <span style={{ fontSize: 10, color: d === device ? '#d1d5db' : '#a8a199' }}>{DEVICES[d].w}</span>
+                <span style={{ fontSize: 10, color: d === device ? '#d1d5db' : 'var(--faint)' }}>{DEVICES[d].w}</span>
               </button>
             ))}
           </span>
@@ -194,15 +194,13 @@ export function AppShell() {
           <span style={{ flex: 1 }} />
 
           {/* 预览 / 导出工程 / 方向标签 */}
-          <button onClick={togglePreview}
-            style={{ border: '1px solid #ece7dd', background: '#fff', borderRadius: 8, fontSize: 13, padding: '6px 16px', cursor: 'pointer', color: '#374151' }}>
+          <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
             {previewing ? '退出预览' : '预览'}
           </button>
-          <button onClick={exportZip}
-            style={{ border: 'none', background: '#f97316', color: '#fff', borderRadius: 8, fontSize: 13, padding: '6px 16px', cursor: 'pointer', fontWeight: 600 }}>
+          <button onClick={exportZip} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
             导出工程
           </button>
-          <span style={{ fontSize: 10, color: '#a8a199', border: '1px solid #ece7dd', borderRadius: 6, padding: '3px 8px' }}>
+          <span style={{ fontSize: 10, color: 'var(--faint)', border: '1px solid var(--line)', borderRadius: 6, padding: '3px 8px' }}>
             方向 C · 极简中性
           </span>
         </header>
@@ -234,8 +232,8 @@ export function AppShell() {
       <DragOverlay dropAnimation={null}>
         {dragType ? (
           <div style={{
-            padding: '8px 14px', background: '#fff7ed', border: '1px dashed #f97316',
-            borderRadius: 8, fontSize: 12, color: '#c2410c',
+            padding: '8px 14px', background: 'var(--accent-soft)', border: '1px dashed var(--accent)',
+            borderRadius: 8, fontSize: 12, color: 'var(--accent-ink)',
           }}>
             {REGISTRY_MAP[dragType]?.label ?? dragType}
           </div>
