@@ -80,5 +80,12 @@ describe('EX · 导出工程端到端', () => {
     expect(names).toContain('ui-builder-export/web/src/pages/Page2/Mobile.tsx');
     const app = await zip.file('ui-builder-export/web/src/App.tsx')!.async('string');
     expect(app).toContain("from './pages/Page'");
+    expect(app).toContain("from './pages/Page2'");
+    // P2-13 · 多页生成 hash 路由
+    expect(app).toContain('hashchange');
+    expect(app).toContain("'/': Page");
+    expect(app).toContain("'/page2': Page2");
+    // data/pages.json 回读校验不受导出改造影响
+    expect(names.length).toBeGreaterThan(0);
   });
 });

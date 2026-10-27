@@ -277,6 +277,30 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       set({ project: p });
     },
 
+    // P2-10 · 事件绑定编辑（action/target/note；navigate 的 target 存页面 id）
+    setNodeEvent: (id, ev, spec) => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.events[ev] = spec;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // P2-11 · 主题令牌编辑（颜色/圆角/字体；导出 tokens.css 使用）
+    updateTheme: patch => {
+      const s = get();
+      const p = produce(s.project, draft => {
+        if (patch.colors) draft.theme.colors = { ...draft.theme.colors, ...patch.colors };
+        if (patch.radius) draft.theme.radius = { ...draft.theme.radius, ...patch.radius };
+        if (patch.font) draft.theme.font = { ...draft.theme.font, ...patch.font };
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
     // PP-03 · 功能备注（该模块在最终成果中的功能描述）
     setNodeNote: (id, note) => {
       const s = get();

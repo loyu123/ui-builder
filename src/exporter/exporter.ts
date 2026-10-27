@@ -75,18 +75,23 @@ export function componentBody(type: string): string {
 }
 
 // ---------- 事件动作收集（EX-03：接口位） ----------
-export function collectActions(project: Project): string[] {
-  const keys = new Set<string>();
+export interface CollectedAction { key: string; action: string; target: string | null }
+
+export function collectActions(project: Project): CollectedAction[] {
+  const list = new Map<string, CollectedAction>();
   for (const pg of project.pages) {
     for (const b of Object.values(pg.boards)) {
       for (const n of Object.values(b.nodes)) {
         for (const [ev, spec] of Object.entries(n.events ?? {})) {
-          if (spec?.action && spec.action !== 'none') keys.add(`${ev}_${spec.action}_${spec.target ?? 'none'}`);
+          if (spec?.action && spec.action !== 'none') {
+            const key = `${ev}_${spec.action}_${spec.target ?? 'none'}`;
+            if (!list.has(key)) list.set(key, { key, action: spec.action, target: spec.target ?? null });
+          }
         }
       }
     }
   }
-  return [...keys];
+  return [...list.values()];
 }
 
 // ---------- 页面 TSX 生成（嵌套渲染树） ----------
@@ -108,10 +113,11 @@ function emitNode(node: Node, board: Board, indent: string, used: Set<string>): 
 }
 
 // 页面组件名（ASCII slug）：pascal 会把纯中文页名清空，故独立回退 Page；
-// 同名页按出现顺序追加序号，保证组件名/文件夹名全局唯一
+// 数字开头（如"页面 2"→"2"）不是合法标识符，补 Page 前缀；同名页按出现顺序追加序号
 function pageSlug(name: string, used: Set<string>): string {
-  const base = name.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').filter(Boolean)
-    .map(w => w[0].toUpperCase() + w.slice(1)).join('') || 'Page';
+  const pascalName = name.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1)).join('');
+  const base = /^[A-Za-z_$]/.test(pascalName) ? pascalName : `Page${pascalName}`;
   let out = base, i = 2;
   while (used.has(out)) out = `${base}${i++}`;
   used.add(out);
@@ -191,7 +197,15 @@ export function ${name}({ props, style }: Props) {
 `);
   }
 
-  // 事件接口位（EX-03：只生成 key，不实现逻辑）
+  // 页面 slug 唯一化（P2-13 路由与 navigate 跳转都要用，先于事件模板计算）
+  const pageNames = new Map<string, string>();
+  const slugUsed = new Set<string>();
+  for (const pg of project.pages) {
+    pageNames.set(pg.id, pageSlug(pg.name, slugUsed));
+  }
+
+  // 事件接口位（EX-03：key 形如 onClick_submit_login）
+  // navigate 且 target 是本工程页面 id 时生成真实 hash 跳转；其余保持接口位
   const actions = collectActions(project);
   f('web/src/events/types.ts',
 `// 事件挂载点类型（由界面搭建器生成）
@@ -201,12 +215,19 @@ export interface EventSpec {
   note?: string;
 }
 `);
+  const actionCases = actions.map(a => {
+    const slug = a.action === 'navigate' && a.target ? pageNames.get(a.target) : undefined;
+    if (slug) {
+      return `    case '${a.key}':\n      window.location.hash = '#/${slug.toLowerCase()}';\n      return true;`;
+    }
+    return `    case '${a.key}':\n      console.info('[action] ${a.key} — 待接入真实行为');\n      return false;`;
+  }).join('\n');
   f('web/src/events/actions.ts',
 `// EX-03 · 事件接口位：key 形如 onClick_submit_login
-// 默认全部返回 false；接入真实行为时在对应 case 里实现并返回 true
+// navigate 已接多页路由；其余默认返回 false，接入真实行为时在对应 case 里实现并返回 true
 export function fire(key: string): boolean {
   switch (key) {
-${actions.map(k => `    case '${k}':\n      console.info('[action] ${k} — 待接入真实行为');\n      return false;`).join('\n') || '    // 当前设计未挂接任何事件'}
+${actionCases || '    // 当前设计未挂接任何事件'}
     default:
       console.info('[action] 未注册:', key);
       return false;
@@ -215,11 +236,6 @@ ${actions.map(k => `    case '${k}':\n      console.info('[action] ${k} — 待�
 `);
 
   // 页面（每页 × 每设备）；文件夹名 = 组件 slug（ASCII 稳定，同名页已唯一化）
-  const pageNames = new Map<string, string>();
-  const slugUsed = new Set<string>();
-  for (const pg of project.pages) {
-    pageNames.set(pg.id, pageSlug(pg.name, slugUsed));
-  }
   for (const pg of project.pages) {
     const slug = pageNames.get(pg.id)!;
     for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
@@ -245,14 +261,47 @@ ${Object.entries(project.theme.radius).map(([k, v]) => `  --radius-${k}: ${v}px;
 html, body, #root { height: 100%; margin: 0; }
 body { font-family: var(--font-base); font-size: var(--font-size-base); }
 `);
-  f('web/src/App.tsx',
+  // 入口：单页直引；多页生成 hash 路由（P2-13，配合事件 action=navigate 跳转）
+  if (project.pages.length <= 1) {
+    f('web/src/App.tsx',
 `import ${pageNames.get(project.pages[0].id)} from './pages/${pageNames.get(project.pages[0].id)}';
 
 export default function App() {
-  // v1 单页入口；多页路由在接口位（fire('onClick_navigate_xxx')）接入后扩展
+  // v1 单页入口
   return <${pageNames.get(project.pages[0].id)} />;
 }
 `);
+  } else {
+    const imports = project.pages.map(pg => {
+      const slug = pageNames.get(pg.id)!;
+      return `import ${slug} from './pages/${slug}';`;
+    }).join('\n');
+    const routes = project.pages.map((pg, i) => {
+      const slug = pageNames.get(pg.id)!;
+      return `  '${i === 0 ? '/' : `/${slug.toLowerCase()}`}': ${slug},`;
+    }).join('\n');
+    f('web/src/App.tsx',
+`import { useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
+${imports}
+
+// 多页 hash 路由（由界面搭建器生成；配合事件 action=navigate 跳转）
+const routes: Record<string, ComponentType> = {
+${routes}
+};
+
+export default function App() {
+  const [path, setPath] = useState(window.location.hash.slice(1) || '/');
+  useEffect(() => {
+    const onHash = () => setPath(window.location.hash.slice(1) || '/');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const Route = routes[path] ?? routes['/'];
+  return <Route />;
+}
+`);
+  }
   f('web/src/main.tsx',
 `import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

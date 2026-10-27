@@ -51,6 +51,6 @@ describe('B2 · 导出模板与注册表字段一致性守卫', () => {
       }],
     } as unknown as Project;
     const keys = collectActions(project);
-    expect(keys).toEqual(['onClick_submit_login']);
+    expect(keys).toEqual([{ key: 'onClick_submit_login', action: 'submit', target: 'login' }]);
   });
 });

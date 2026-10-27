@@ -157,8 +157,21 @@ describe('W5 回归 · 30 模块增删', () => {
     expect(countModules()).toBe(1);
   });
 
-  it('性能冒烟：200 节点增删不超时（数据层）', () => {
+  it('P2-10/11：事件绑定编辑与主题令牌更新（未动字段保留）', () => {
     const a = useStore.getState().actions;
+    a.addNode('button-primary', { x: 1, y: 1, w: 200, h: 48 });
+    const id = board().nodes[board().rootId].children[0];
+    a.setNodeEvent(id, 'onClick', { action: 'navigate', target: 'pg-x', note: '去首页' });
+    expect(board().nodes[id].events.onClick).toMatchObject({ action: 'navigate', target: 'pg-x', note: '去首页' });
+    a.updateTheme({ colors: { primary: '#123456' } });
+    expect(useStore.getState().project.theme.colors.primary).toBe('#123456');
+    expect(useStore.getState().project.theme.colors.bg).toBe('#ffffff');   // 其他颜色保留
+    a.updateTheme({ font: { family: 'serif' } });
+    expect(useStore.getState().project.theme.font.family).toBe('serif');
+    expect(useStore.getState().project.theme.font.base).toBe(14);
+  });
+
+  it('性能冒烟：200 节点增删不超时（数据层）', () => {    const a = useStore.getState().actions;
     const t0 = Date.now();
     for (let i = 0; i < 200; i++) {
       a.addNode('paragraph', { x: i % 300, y: (i * 10) % 800, w: 240, h: 48 });

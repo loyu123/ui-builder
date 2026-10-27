@@ -1,5 +1,5 @@
 // store 切片类型定义（B1 拆分）：状态切片与动作接口集中在此，避免循环依赖
-import type { DeviceId, Frame, Node, Page, Project } from '../types';
+import type { DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
 
 export type PagesSnapshot = Page[];
 
@@ -44,6 +44,12 @@ export interface Actions {
   deletePage: (id: string) => void;
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
+  setNodeEvent: (id: string, ev: string, spec: EventSpec) => void;
+  updateTheme: (patch: {
+    colors?: Record<string, string>;
+    radius?: Record<string, number>;
+    font?: Partial<ThemeTokens['font']>;
+  }) => void;
   setNodeNote: (id: string, note: string) => void;
   setNodePos: (id: string, pos: string) => void;
   setNodeName: (id: string, name: string) => void;

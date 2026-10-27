@@ -4,11 +4,24 @@ import { useEffect, useRef, useState } from 'react';
 import type * as React from 'react';
 import { useStore } from '../store';
 import { REGISTRY_MAP, type FieldDef } from '../modules/registry';
+import type { EventSpec } from '../types';
 import { runRules, type Suggestion } from '../ai/engine';
 
 function fieldInputStyle(): React.CSSProperties {
   return { width: '100%', border: '1px solid #ece7dd', borderRadius: 6, padding: '5px 8px', fontSize: 12, background: '#fff' };
 }
+
+// P2-10 · 事件动作选项（与 EventSpec.action 枚举一致）
+const EVENT_ACTIONS: Array<{ v: EventSpec['action']; label: string }> = [
+  { v: 'none', label: '无（占位）' },
+  { v: 'navigate', label: '跳转页面' },
+  { v: 'submit', label: '提交表单' },
+  { v: 'back', label: '返回上级' },
+  { v: 'dismiss', label: '关闭弹层' },
+  { v: 'toggle', label: '切换状态' },
+  { v: 'bind', label: '绑定接口' },
+  { v: 'external', label: '打开外链' },
+];
 
 function exportJson() {
   const { project } = useStore.getState();
@@ -91,6 +104,8 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
   });
   const undoDepth = useStore(s => s.history.past.length);   // 细粒度：拖动合并（lastAt）不触发重渲染
   const historyLog = useStore(s => s.history.log);
+  const theme = useStore(s => s.project.theme);
+  const updateTheme = useStore(s => s.actions.updateTheme);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
   const [checked, setChecked] = useState<{ total: number; pass: number } | null>(null);
@@ -233,6 +248,39 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
       <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />
 
+      {/* P2-11 · 主题令牌编辑（导出 tokens.css 使用） */}
+      <details style={{ border: '1px solid #ece7dd', borderRadius: 10, padding: '8px 10px', background: '#fff' }}>
+        <summary style={{ fontSize: 12, color: '#57534e', cursor: 'pointer', userSelect: 'none' }}>🎨 主题</summary>
+        <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ fontSize: 10, color: '#a8a199' }}>颜色（导出为 --color-*）</div>
+          {Object.entries(theme.colors).map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 52, fontSize: 11, color: '#57534e', flexShrink: 0 }}>{k}</span>
+              <input type="color" value={v} style={{ width: 28, height: 24, border: 'none', background: 'none', padding: 0, cursor: 'pointer' }}
+                onChange={e => updateTheme({ colors: { [k]: e.target.value } })} />
+              <input style={fieldInputStyle()} value={v}
+                onChange={e => updateTheme({ colors: { [k]: e.target.value } })} />
+            </div>
+          ))}
+          <div style={{ fontSize: 10, color: '#a8a199', marginTop: 2 }}>圆角（导出为 --radius-*px）</div>
+          {Object.entries(theme.radius).map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 52, fontSize: 11, color: '#57534e', flexShrink: 0 }}>{k}</span>
+              <input type="number" min={0} style={fieldInputStyle()} value={v}
+                onChange={e => updateTheme({ radius: { [k]: Math.max(0, Number(e.target.value) || 0) } })} />
+            </div>
+          ))}
+          <div style={{ fontSize: 10, color: '#a8a199', marginTop: 2 }}>字体（导出为 --font-base / --font-size-base）</div>
+          <input style={fieldInputStyle()} value={theme.font.family}
+            onChange={e => updateTheme({ font: { ...theme.font, family: e.target.value } })} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 52, fontSize: 11, color: '#57534e', flexShrink: 0 }}>基准字号</span>
+            <input type="number" min={8} max={24} style={fieldInputStyle()} value={theme.font.base}
+              onChange={e => updateTheme({ font: { ...theme.font, base: Math.max(8, Math.min(24, Number(e.target.value) || 14)) } })} />
+          </div>
+        </div>
+      </details>
+
       {/* P2-14 · 快捷键说明（原生 details 折叠，不抢快捷键） */}
       <details style={{ border: '1px solid #ece7dd', borderRadius: 10, padding: '8px 10px', background: '#fff' }}>
         <summary style={{ fontSize: 12, color: '#57534e', cursor: 'pointer', userSelect: 'none' }}>⌨️ 快捷键</summary>
@@ -280,7 +328,8 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent } = useStore(s => s.actions);
+  const pages = useStore(s => s.project.pages);
   const [, force] = useState(0);
 
   // 选中即编辑：点选画布模块时自动切到属性页签（手动切回助手后，选中新模块才会再切换）
@@ -385,10 +434,33 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
                 </>
               )}
 
-              <div style={{ fontSize: 11, color: '#a8a199', marginTop: 4 }}>events（接口挂载点，只读）</div>
-              <pre style={{ margin: 0, fontSize: 10, background: '#faf8f4', padding: 8, borderRadius: 6, overflow: 'auto', maxHeight: 120 }}>
-{JSON.stringify(sel.events, null, 2)}
-              </pre>
+              <div style={{ fontSize: 11, color: '#a8a199', marginTop: 4 }}>events（事件绑定）</div>
+              {Object.entries(sel.events).map(([ev, spec]) => (
+                <div key={ev} style={{ display: 'flex', flexDirection: 'column', gap: 4, background: '#faf8f4', border: '1px solid #ece7dd', padding: 8, borderRadius: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#57534e' }}>{ev}</div>
+                  <select style={fieldInputStyle()} value={spec.action}
+                    onChange={e => setNodeEvent(sel.id, ev, { ...spec, action: e.target.value as typeof spec.action })}>
+                    {EVENT_ACTIONS.map(a => <option key={a.v} value={a.v}>{a.label}</option>)}
+                  </select>
+                  {spec.action === 'navigate' && (
+                    <select style={fieldInputStyle()} value={spec.target ?? ''}
+                      onChange={e => setNodeEvent(sel.id, ev, { ...spec, target: e.target.value || null })}>
+                      <option value="">选择目标页面…</option>
+                      {pages.map(pg => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
+                    </select>
+                  )}
+                  {spec.action !== 'none' && spec.action !== 'navigate' && (
+                    <input style={fieldInputStyle()} placeholder="目标 / 参数"
+                      value={spec.target ?? ''}
+                      onChange={e => setNodeEvent(sel.id, ev, { ...spec, target: e.target.value || null })} />
+                  )}
+                  {spec.action !== 'none' && (
+                    <input style={fieldInputStyle()} placeholder="备注（可选）"
+                      value={spec.note ?? ''}
+                      onChange={e => setNodeEvent(sel.id, ev, { ...spec, note: e.target.value })} />
+                  )}
+                </div>
+              ))}
 
               <button onClick={() => useStore.getState().actions.clearBoard()} style={{ ...cardBtn, color: '#b91c1c', borderColor: '#fecaca' }}>
                 清空当前画板
