@@ -46,9 +46,10 @@ src/
 
 ## Tests
 
-**24 tests** (`npm test`):
+**31 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
+- `src/ai/engine.test.ts` — 7 rule-engine tests (align / spacing / contrast / hierarchy / length, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 10 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import with deep validation, perf smoke)
 - `src/exporter/exporter.test.ts` — 5 export e2e tests (zip layout / components / pages.json / TSX refs / slug uniqueness)
 - `src/exporter/guard.test.ts` — 2 drift-guard tests (template props ⊆ registry fields; event key format)
@@ -60,7 +61,8 @@ src/
 
 - **Undo/redo:** full-step snapshot stack (deep-clone pages, max 50). Drag gestures within 400ms merge into one step. Not immer patches (optional in the plan); simple and sufficient. Can switch to patches later if needed.
 - **AI:** v1 is a local rule engine (5 rules). `.env` reserves a remote AI gateway (embed/rerank); without it, rules-only. Applied suggestions go through the shared undo stack.
-- **Error handling:** `ErrorBoundary` wraps the app so render failures do not white-screen; provides refresh / clear-cache actions.
+- **Error handling:** `ErrorBoundary` wraps the app so render failures do not white-screen; provides refresh / clear-cache actions (clears IndexedDB for a full reset).
+- **Export stack:** generated `web/` uses React 19 aligned with the editor; the contrast rule uses WCAG luminance with per-channel hex parsing.
 
 ## Roadmap
 

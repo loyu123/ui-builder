@@ -126,8 +126,9 @@ function ruleSpacing(snap: SnapNode[]): Suggestion[] {
 function luminance(hex: string): number {
   const m = hex.replace('#', '');
   if (m.length !== 6) return 0.5;
+  // 每通道占 2 个 hex 字符：i=0 → 'RR'，i=1 → 'GG'，i=2 → 'BB'
   const f = (i: number) => {
-    const c = parseInt(m.slice(i, i + 2), 16) / 255;
+    const c = parseInt(m.slice(i * 2, i * 2 + 2), 16) / 255;
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   };
   return 0.2126 * f(0) + 0.7152 * f(1) + 0.0722 * f(2);

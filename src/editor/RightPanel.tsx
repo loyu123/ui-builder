@@ -232,6 +232,26 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
       </div>
       <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />
+
+      {/* P2-14 · 快捷键说明（原生 details 折叠，不抢快捷键） */}
+      <details style={{ border: '1px solid #ece7dd', borderRadius: 10, padding: '8px 10px', background: '#fff' }}>
+        <summary style={{ fontSize: 12, color: '#57534e', cursor: 'pointer', userSelect: 'none' }}>⌨️ 快捷键</summary>
+        <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', fontSize: 11, color: '#57534e' }}>
+          {[
+            ['Ctrl/⌘+Z', '撤销'], ['Ctrl/⌘+Shift+Z', '重做'],
+            ['Ctrl/⌘+C', '复制选中'], ['Ctrl/⌘+V', '粘贴'],
+            ['Delete', '删除选中'], ['Esc', '取消选择 / 退出预览'],
+            ['空格+拖动', '平移画布'], ['Ctrl+滚轮', '缩放画布'],
+            ['Shift+点击', '追加多选'], ['Shift+缩放手柄', '锁定比例'],
+            ['双击文字', '就地编辑文案'],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: 'contents' }}>
+              <kbd style={{ background: '#f5f2ec', border: '1px solid #ece7dd', borderRadius: 4, padding: '1px 6px', fontSize: 10, fontFamily: 'inherit', justifySelf: 'start' }}>{k}</kbd>
+              <span>{v}</span>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }

@@ -147,13 +147,13 @@ export async function exportProjectZip(project: Project): Promise<Uint8Array> {
   // data/pages.json（可再导入编辑器的唯一事实源）
   f('data/pages.json', JSON.stringify(project, null, 2));
 
-  // web 脚手架
+  // web 脚手架（P3-17 · React 版本与编辑器对齐）
   f('web/package.json', JSON.stringify({
     name: 'ui-builder-app', private: true, version: '0.1.0', type: 'module',
     scripts: { dev: 'vite', build: 'tsc -b && vite build', preview: 'vite preview' },
-    dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' },
+    dependencies: { react: '^19.3.1', 'react-dom': '^19.3.1' },
     devDependencies: {
-      '@types/react': '^18.3.12', '@types/react-dom': '^18.3.1',
+      '@types/react': '^19.3.0', '@types/react-dom': '^19.3.0',
       '@vitejs/plugin-react': '^4.3.4', typescript: '^5.6.3', vite: '^5.4.11',
     },
   }, null, 2));
