@@ -182,10 +182,13 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
       {/* P2-29 · 图层树：当前画板节点结构，点击选中深层模块 */}
       <div style={{ ...head, marginTop: 2 }}>图层（{device === 'desktop' ? '电脑' : device === 'mobile' ? '手机' : '手表'}）</div>
       <div style={{ borderBottom: '1px solid #f0ebe2', maxHeight: 168, overflowY: 'auto', paddingBottom: 4 }}>
-        {layerRoot.children.map(cid => <LayerRow key={cid} id={cid} board={layerRoot} depth={0} />)}
-        {layerRoot.children.length === 0 && (
-          <div style={{ padding: '4px 10px 6px', fontSize: 10, color: '#c9c2b6' }}>画板为空，从下方拖入模块</div>
-        )}
+        {(() => {
+          const root = layerRoot.nodes[layerRoot.rootId];
+          if (!root || root.children.length === 0) {
+            return <div style={{ padding: '4px 10px 6px', fontSize: 10, color: '#c9c2b6' }}>画板为空，从下方拖入模块</div>;
+          }
+          return root.children.map(cid => <LayerRow key={cid} id={cid} board={layerRoot} depth={0} />);
+        })()}
       </div>
 
       {/* 组件分组（C：分类 + 计数 + 折叠） */}

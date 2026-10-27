@@ -1,6 +1,6 @@
 // AppShell · C 方向顶栏（Logo/项目名/设备切换/预览/导出工程）+ 三栏 + 预览模式
 import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore, DEVICES } from '../store';
 import { demoLoginProject } from '../store/demo';
 import type { DeviceId } from '../types';
@@ -10,6 +10,7 @@ import { findContainerAt, absOrigin } from '../lib/tree';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export function AppShell() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
@@ -20,6 +21,13 @@ export function AppShell() {
   const [previewing, setPreviewing] = useState(false);
   const [ready, setReady] = useState(false);   // P2-28 · IndexedDB 读取完成前显示骨架，避免闪默认空项目
   const [dragType, setDragType] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }
 
   useEffect(() => {
     void hydrate().then(() => {
@@ -87,6 +95,7 @@ export function AppShell() {
       if ((e.key === 'Delete' || e.key === 'Backspace') && st.editor.selection.length) {
         e.preventDefault();
         st.actions.deleteNode(st.editor.selection[0]);
+        showToast('已删除模块 · Ctrl+Z 可撤销');   // P2-26 · 删除可感知
         return;
       }
       // P2-20 · 方向键微调：1px，Shift +8px（400ms 内合并为一步撤销）
@@ -202,10 +211,23 @@ export function AppShell() {
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
           <LeftPanel previewing={previewing} />
           <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
-            <Canvas previewing={previewing} />
+            <ErrorBoundary compact label="画布">
+              <Canvas previewing={previewing} />
+            </ErrorBoundary>
           </div>
-          <RightPanel previewing={previewing} />
+          <ErrorBoundary compact label="右侧面板">
+            <RightPanel previewing={previewing} />
+          </ErrorBoundary>
         </div>
+
+        {/* P2-26 · 轻提示 */}
+        {toast && (
+          <div style={{
+            position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
+            background: '#2a3548', color: '#e6ebf2', borderRadius: 999, padding: '7px 18px',
+            fontSize: 12, boxShadow: '0 4px 14px rgba(0,0,0,.28)',
+          }}>{toast}</div>
+        )}
       </div>
 
       {/* 拖拽影子 */}

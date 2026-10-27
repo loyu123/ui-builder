@@ -201,8 +201,8 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     const pOrigin = absOrigin(board, parentId);
     const myAbs = { x: pOrigin.x + frame.x, y: pOrigin.y + frame.y, w: frame.w, h: frame.h };
 
-    const vx: number[] = [0, dev.w];
-    const hy: number[] = [0, dev.h];
+    const vx: number[] = [0, dev.w, dev.w / 2];   // P2-23 · 画板中线吸附候选
+    const hy: number[] = [0, dev.h, dev.h / 2];
     for (const n of Object.values(board.nodes)) {
       if (exclude.has(n.id) || !n.parentId) continue;
       const o = absOrigin(board, n.id);
