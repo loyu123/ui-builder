@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { DEVICES, useStore } from '../store';
 import { screenToBoard, snapThreshold } from '../lib/coords';
+import { matchSnap } from '../lib/snap';
 import { absOrigin, findContainerAt, subtreeIds } from '../lib/tree';
 import { ModuleRenderer } from '../modules/renderers';
 const MemoModuleRenderer = memo(ModuleRenderer);   // P1-08 · node 引用不变即跳过重渲染（immer 结构共享）
@@ -213,18 +214,11 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
     const gv: number[] = [];
     const gh: number[] = [];
     const out = { ...frame };
-    const tryAxis = (myEdges: number[], cands: number[], apply: (d: number) => void, guide: (v: number) => void) => {
-      let best: { d: number; cand: number } | null = null;
-      for (const me of myEdges) {
-        for (const c of cands) {
-          const d = c - me;
-          if (Math.abs(d) <= th && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, cand: c };
-        }
-      }
-      if (best) { apply(best.d); guide(best.cand); }
-    };
-    tryAxis([myAbs.x, myAbs.x + myAbs.w / 2, myAbs.x + myAbs.w], vx, d => { out.x += d; }, v => gv.push(v));
-    tryAxis([myAbs.y, myAbs.y + myAbs.h / 2, myAbs.y + myAbs.h], hy, d => { out.y += d; }, v => gh.push(v));
+    // P1-14 · 匹配逻辑抽到 lib/snap.ts（纯函数，可单测）
+    const bestV = matchSnap([myAbs.x, myAbs.x + myAbs.w / 2, myAbs.x + myAbs.w], vx, th);
+    if (bestV) { out.x += bestV.d; gv.push(bestV.cand); }
+    const bestH = matchSnap([myAbs.y, myAbs.y + myAbs.h / 2, myAbs.y + myAbs.h], hy, th);
+    if (bestH) { out.y += bestH.d; gh.push(bestH.cand); }
     setGuides({ v: gv, h: gh });
     return out;
   }
