@@ -340,6 +340,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         style={{
           position: 'absolute',
           left: frame.x, top: frame.y, width: frame.w, height: frame.h,
+          transform: n.rotation ? `rotate(${n.rotation}deg)` : undefined,
           outline: selected ? `2px solid ${ACCENT}` : 'none',
           outlineOffset: 1,
           opacity: preview?.id === n.id ? 0.9 : 1,

@@ -277,6 +277,19 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       set({ project: p });
     },
 
+    // 旋转模块（度，0~359；吸附/对齐仍按未旋转外接矩形近似）
+    setNodeRotation: (id, deg) => {
+      const s = get();
+      hist.pushHistory('rotate');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const n = board.nodes[id];
+        if (n) n.rotation = ((Math.round(deg) % 360) + 360) % 360;
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
     // P2-10 · 事件绑定编辑（action/target/note；navigate 的 target 存页面 id）
     setNodeEvent: (id, ev, spec) => {
       const s = get();

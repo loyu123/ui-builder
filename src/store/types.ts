@@ -44,6 +44,7 @@ export interface Actions {
   deletePage: (id: string) => void;
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
+  setNodeRotation: (id: string, deg: number) => void;
   setNodeEvent: (id: string, ev: string, spec: EventSpec) => void;
   updateTheme: (patch: {
     colors?: Record<string, string>;

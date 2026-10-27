@@ -108,7 +108,8 @@ function emitNode(node: Node, board: Board, indent: string, used: Set<string>): 
     .filter(Boolean)
     .map(c => emitNode(c, board, indent + '  ', used))
     .join('\n');
-  const self = `{/* ${meta?.label ?? node.type} */}\n${indent}<div style={{ position: "absolute", left: ${node.frame.x}, top: ${node.frame.y}, width: ${node.frame.w}, height: ${node.frame.h} }}${onFire}>\n${indent}  <${comp} props={${propsJson}} style={${styleJson}} />\n${childDivs ? childDivs + '\n' : ''}${indent}</div>`;
+  const rotate = node.rotation ? `, transform: "rotate(${node.rotation}deg)"` : '';
+  const self = `{/* ${meta?.label ?? node.type} */}\n${indent}<div style={{ position: "absolute", left: ${node.frame.x}, top: ${node.frame.y}, width: ${node.frame.w}, height: ${node.frame.h}${rotate} }}${onFire}>\n${indent}  <${comp} props={${propsJson}} style={${styleJson}} />\n${childDivs ? childDivs + '\n' : ''}${indent}</div>`;
   return self;
 }
 

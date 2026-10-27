@@ -328,7 +328,7 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation } = useStore(s => s.actions);
   const pages = useStore(s => s.project.pages);
   const [, force] = useState(0);
 
@@ -410,6 +410,14 @@ export function RightPanel({ previewing }: { previewing?: boolean }) {
                       value={sel.frame[k]} onChange={e => setFrameField(sel.id, k, Number(e.target.value))} />
                   </div>
                 ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 11, color: '#8a8378', width: 14 }}>↻</span>
+                  <input type="number" min={0} max={359} style={{ width: '100%', border: '1px solid #ece7dd', borderRadius: 6, padding: '5px 6px', fontSize: 12 }}
+                    value={sel.rotation ?? 0} onChange={e => setNodeRotation(sel.id, Number(e.target.value))} />
+                  <span style={{ fontSize: 11, color: '#8a8378' }}>度</span>
+                </div>
+                <button onClick={() => setNodeRotation(sel.id, 0)}
+                  style={{ ...cardBtn, padding: '3px 7px', fontSize: 11, flex: 'none' }}>归零</button>
               </div>
 
               {/* 功能备注（核心需求：描述该模块在最终成果中的功能） */}

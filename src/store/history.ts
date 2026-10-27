@@ -10,7 +10,7 @@ type Get = StoreApi<Store>['getState'];
 const TAG_LABEL: Record<string, string> = {
   add: '拖入模块', drag: '移动模块', resize: '调整尺寸', prop: '修改属性', style: '修改样式',
   frame: '修改位置尺寸', delete: '删除模块', paste: '粘贴模块', page: '新建页面', 'page-del': '删除页面',
-  'copy-board': '复制设备设计', reorder: '调整图层顺序', flag: '显隐/锁定', clear: '清空画板', 'ai-apply': '应用 AI 建议',
+  'copy-board': '复制设备设计', reorder: '调整图层顺序', flag: '显隐/锁定', clear: '清空画板', 'ai-apply': '应用 AI 建议', rotate: '旋转模块',
 };
 
 export function makeHistory(set: Set, get: Get) {

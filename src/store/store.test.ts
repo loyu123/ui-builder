@@ -171,6 +171,20 @@ describe('W5 回归 · 30 模块增删', () => {
     expect(useStore.getState().project.theme.font.base).toBe(14);
   });
 
+  it('旋转：setNodeRotation 归一化到 0~359，可撤销重做', () => {
+    const a = useStore.getState().actions;
+    a.addNode('heading', { x: 10, y: 10, w: 200, h: 34 });
+    const id = board().nodes[board().rootId].children[0];
+    a.setNodeRotation(id, 435);
+    expect(board().nodes[id].rotation).toBe(75);      // 435 → 75
+    a.setNodeRotation(id, -90);
+    expect(board().nodes[id].rotation).toBe(270);     // -90 → 270
+    a.undo();   // 两次 rotate 同 tag 合并为一步 → 回到未旋转
+    expect(board().nodes[id].rotation ?? 0).toBe(0);
+    a.redo();
+    expect(board().nodes[id].rotation).toBe(270);
+  });
+
   it('性能冒烟：200 节点增删不超时（数据层）', () => {    const a = useStore.getState().actions;
     const t0 = Date.now();
     for (let i = 0; i < 200; i++) {
