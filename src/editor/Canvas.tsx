@@ -113,6 +113,8 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
 
   function beginGesture(e: React.PointerEvent, mode: Gesture['mode'], node?: Node, handle?: Handle) {
     if (!boardRef.current) return;
+    // 预览模式：只允许空格/触控板平移，拖动/缩放/框选/选中一律不响应
+    if (previewing && !(mode === 'marquee' && spaceDown.current)) return;
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const st = useStore.getState();
@@ -334,6 +336,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         onPointerDown={e => beginGesture(e, 'move', n)}
         onDoubleClick={e => {
           e.stopPropagation();
+          if (previewing) return;   // 预览模式下不允许就地编辑
           const key = EDITABLE_TEXT[n.type];
           if (key) setEditing({ id: n.id, key, value: String(n.props[key] ?? '') });
         }}
