@@ -10,7 +10,8 @@ const pascal = (s: string) => s.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').filter(
 
 // ---------- 组件模板（与编辑器渲染器视觉一致；静态快照） ----------
 // 生成代码统一使用 st（样式）/ p（属性字符串化）辅助，保证 TS 严格模式可编译
-function componentBody(type: string): string {
+// （componentBody/collectActions 导出供 guard 测试做字段一致性校验）
+export function componentBody(type: string): string {
   switch (type) {
     case 'page': case 'group': case 'card':
       return '<div style={{ width: "100%", height: "100%", ...st }} />';
@@ -74,7 +75,7 @@ function componentBody(type: string): string {
 }
 
 // ---------- 事件动作收集（EX-03：接口位） ----------
-function collectActions(project: Project): string[] {
+export function collectActions(project: Project): string[] {
   const keys = new Set<string>();
   for (const pg of project.pages) {
     for (const b of Object.values(pg.boards)) {

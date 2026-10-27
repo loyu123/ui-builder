@@ -89,7 +89,8 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
     const pid = s.editor.currentPageId;
     return s.project.pages.find(pg => pg.id === pid) ?? s.project.pages[0];
   });
-  const history = useStore(s => s.history);
+  const undoDepth = useStore(s => s.history.past.length);   // 细粒度：拖动合并（lastAt）不触发重渲染
+  const historyLog = useStore(s => s.history.log);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
   const [checked, setChecked] = useState<{ total: number; pass: number } | null>(null);
@@ -208,10 +209,10 @@ function AiAssistant({ onOpenProps }: { onOpenProps: () => void }) {
       {/* 操作记录 */}
       <div>
         <div style={{ fontSize: 11, color: '#a8a199', marginBottom: 4 }}>
-          最近 {Math.min(history.past.length, 4)} 步可撤销 · {lastExportText()}导出
+          最近 {Math.min(undoDepth, 4)} 步可撤销 · {lastExportText()}导出
         </div>
-        {history.log.length === 0 && <div style={{ fontSize: 11, color: '#d8d2c8' }}>暂无操作</div>}
-        {history.log.slice(0, 4).map((t, i) => (
+        {historyLog.length === 0 && <div style={{ fontSize: 11, color: '#d8d2c8' }}>暂无操作</div>}
+        {historyLog.slice(0, 4).map((t, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#57534e', padding: '3px 0', borderBottom: '1px dashed #f0ebe2' }}>
             <span>{t}</span>
             <span style={{ color: '#d8d2c8' }}>{i === 0 ? '刚刚' : `${i} 步前`}</span>
