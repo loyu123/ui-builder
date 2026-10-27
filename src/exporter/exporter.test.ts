@@ -47,6 +47,17 @@ describe('EX · 导出工程端到端', () => {
     expect(names.length).toBeGreaterThanOrEqual(palette.length);
   });
 
+  it('P2-32：与主题色相同的样式值导出为 CSS 变量（var(--color-*)）', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const a = useStore.getState().actions;
+    a.addNode('button-primary', { x: 10, y: 10, w: 200, h: 48 });
+    // registry 默认按钮底色即主题 primary（#f97316）→ 应生成 var 引用
+    const bytes = await exportProjectZip(useStore.getState().project);
+    const zip = await JSZip.loadAsync(bytes);
+    const tsx = await zip.file('ui-builder-export/web/src/pages/Page/Mobile.tsx')!.async('string');
+    expect(tsx).toContain('var(--color-primary)');
+  });
+
   it('P2-31：未使用的模块组件被裁剪', async () => {
     useStore.setState({ project: createEmptyProject() });
     const a = useStore.getState().actions;

@@ -95,18 +95,28 @@ export function collectActions(project: Project): CollectedAction[] {
 }
 
 // ---------- 页面 TSX 生成（嵌套渲染树） ----------
-function emitNode(node: Node, board: Board, indent: string, used: Set<string>): string {
+function emitNode(node: Node, board: Board, indent: string, used: Set<string>,
+  colorVars: Map<string, string>): string {
   const meta = REGISTRY_MAP[node.type];
   const comp = pascal(node.type);
   if (node.type !== 'page') used.add(node.type);
-  const styleJson = JSON.stringify(node.style);
+  // P2-32 · 主题 token 进组件：与主题颜色相同的样式值替换为 CSS 变量，
+  // 导出工程改 tokens.css 即可全局换肤（编辑器内仍显示字面色值）
+  const themedStyle: Record<string, unknown> = { ...node.style };
+  for (const [k, v] of Object.entries(themedStyle)) {
+    if (typeof v === 'string') {
+      const varRef = colorVars.get(v.toLowerCase());
+      if (varRef) themedStyle[k] = varRef;
+    }
+  }
+  const styleJson = JSON.stringify(themedStyle);
   const propsJson = JSON.stringify(node.props);
   const ev = Object.entries(node.events ?? {}).find(([, s]) => s.action !== 'none');
   const onFire = ev ? ` onClick={() => fire("${ev[0]}_${ev[1].action}_${ev[1].target ?? 'none'}")}` : '';
   const childDivs = node.children
     .map(cid => board.nodes[cid])
     .filter(Boolean)
-    .map(c => emitNode(c, board, indent + '  ', used))
+    .map(c => emitNode(c, board, indent + '  ', used, colorVars))
     .join('\n');
   const rotate = node.rotation ? `, transform: "rotate(${node.rotation}deg)"` : '';
   const self = `{/* ${meta?.label ?? node.type} */}\n${indent}<div style={{ position: "absolute", left: ${node.frame.x}, top: ${node.frame.y}, width: ${node.frame.w}, height: ${node.frame.h}${rotate} }}${onFire}>\n${indent}  <${comp} props={${propsJson}} style={${styleJson}} />\n${childDivs ? childDivs + '\n' : ''}${indent}</div>`;
@@ -125,12 +135,13 @@ function pageSlug(name: string, used: Set<string>): string {
   return out;
 }
 
-function pageTsx(page: Page, device: DeviceId, slug: string, usedModules: Set<string>): string {
+function pageTsx(page: Page, device: DeviceId, slug: string, usedModules: Set<string>,
+  colorVars: Map<string, string>): string {
   const board: Board = page.boards[device];
   const used = usedModules;   // P2-31 · 跨页共享：组件按需裁剪
   const root = board.nodes[board.rootId];
   const children = root.children.map(id => board.nodes[id]).filter(Boolean)
-    .map(n => emitNode(n, board, '      ', used)).join('\n');
+    .map(n => emitNode(n, board, '      ', used, colorVars)).join('\n');
   const imports = [...used].map(t => `import { ${pascal(t)} } from "../../components/${pascal(t)}";`).join('\n');
   const dev = device.charAt(0).toUpperCase() + device.slice(1);
   return `${imports ? imports + '\n\n' : ''}import { fire } from "../../events/actions";
@@ -211,6 +222,12 @@ export function ${name}({ props, style }: Props) {
   const pageNames = new Map<string, string>();
   const slugUsed = new Set<string>();
   const usedModules = usedTypes;   // P2-31 · 页面 TSX 共享同一集合
+
+  // P2-32 · 主题色值 → CSS 变量映射（小写色值 → var(--color-*)）
+  const colorVars = new Map<string, string>();
+  for (const [k, v] of Object.entries(project.theme.colors)) {
+    colorVars.set(v.toLowerCase(), `var(--color-${k})`);
+  }
   for (const pg of project.pages) {
     pageNames.set(pg.id, pageSlug(pg.name, slugUsed));
   }
@@ -250,7 +267,8 @@ ${actionCases || '    // 当前设计未挂接任何事件'}
   for (const pg of project.pages) {
     const slug = pageNames.get(pg.id)!;
     for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
-      f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`, pageTsx(pg, device, slug, usedModules));
+      f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`,
+        pageTsx(pg, device, slug, usedModules, colorVars));
     }
     f(`web/src/pages/${slug}/index.tsx`,
 `import Mobile from './Mobile';
