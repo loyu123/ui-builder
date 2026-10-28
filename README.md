@@ -30,6 +30,7 @@ npm run build           # production build
 | Multi-device design | Desktop 1440×900 / Mobile 390×844 / Watch 200×242; independent per page per device; one-click "copy from" another device |
 | Drag & build | Library drop, free move (local preview state, committed on pointer-up), 8-handle resize, Shift ratio lock, 6px snap guides + board center-line snapping, nested containers, node rotation 0–359° |
 | Editing | Multi-select / marquee / group move, Ctrl+C/V, Delete (keyboard + button), hide, lock, z-order, arrow-key nudge (1px, Shift 8px), undo/redo (graded snapshot stack, 50 steps) |
+| Spacing marks | Selecting a single node annotates the nearest gaps to its siblings (closest on each of the 4 sides, only when they overlap on the other axis; zero/overlapping gaps are skipped); marks hide during drag / resize / marquee |
 | Properties panel | Registry-driven fields (text, color, number, select) + frame inputs + rotation + notes + per-node position label |
 | Event binding | Editable in the right panel (action / target / note); export generates `fire(key)` stubs; `navigate` to a project page becomes a real hash-route jump in the exported app |
 | Layer tree | Current board as a tree: indent, click to select (synced with canvas, auto-scrolls into view), keyword filter, collapse/expand, per-row hide & lock toggles |
@@ -46,18 +47,19 @@ npm run build           # production build
 ```
 src/
 ├─ types.ts            # Data model (Node / Board / Page / Project) + runtime validation
-├─ lib/                # coords, tree, snap, persist (migrations + clearAll), id, aiClient
+├─ lib/                # coords, tree, snap, spacing, persist (migrations + clearAll), png, id, aiClient
 ├─ store/              # index (composition) + project / editor / history / actions / types / demo
 ├─ modules/            # registry.ts (30 modules, CONTAINER_TYPES single source) + renderers.tsx
-├─ editor/             # AppShell, Canvas, LeftPanel, RightPanel, ErrorBoundary
+├─ editor/             # AppShell, Canvas, LeftPanel, RightPanel, ExportModal, ErrorBoundary
+│  ├─ canvas/          # NodeView (memo), gesture, SpacingMarks (spacing overlay)
 │  └─ right/           # AiPanel, PropsPanel, shared (styles + JSON I/O)
 ├─ ai/engine.ts        # Rule-based suggestion engine
-└─ exporter/           # React project zip generator (+ e2e / guard tests)
+└─ exporter/           # React project zip generator (slug + hash router + scope)
 ```
 
 ## Tests
 
-**135 tests** (`npm test`):
+**142 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -77,6 +79,7 @@ src/
 - `src/exporter/guard.test.ts` — 4 drift-guard tests (template props ⊆ registry fields; event key format; table completeness / no stale keys)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (two pages + navigate, for manual real-build verification)
 - `src/lib/png.test.ts` — 6 board-export tests (default 2× and 1–3 clamp, NaN/Infinity fallback, filename illegal-char replacement and dash collapsing, empty-name `board` fallback, zero-padded date)
+- `src/lib/spacing.test.ts` — 7 spacing-mark tests (nearest gap per side, overlap-center placement, no cross-axis overlap, smallest of several candidates, overlap/adjacent skipped, all four sides)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).
 
@@ -105,8 +108,9 @@ PR CI (`ci.yml`) runs lint + test + build on pull requests; `main` pushes deploy
 ## Roadmap
 
 - **v1.0:** pure frontend, offline; rule-based AI; React static export
-- **v1.1 (current):** event-binding UI (with real `navigate` routing in exports), theme token editor, interactive preview, layer tree, batch operations, PR CI, sliced store, graded snapshots, drift-guard tests
-- **Later:** theme tokens referenced as CSS vars in exported components, deeper dual-render convergence, coverage gaps (tree/actions paths)
+- **v1.1:** event-binding UI (with real `navigate` routing in exports), theme token editor, interactive preview, layer tree, batch operations, PR CI, sliced store, graded snapshots, drift-guard tests
+- **v1.2 (current):** multi-project management, template library, 6-way align/distribute, layer-tree upgrades, board PNG export, export scope (pages/devices), spacing marks
+- **Later:** optional remote AI (embed/rerank gateway), coverage in CI gate
 - **Out of scope:** multiplayer collab, responsive cross-device layout, real-device preview, backend business logic (see S1–S3 delivery switches)
 
 ## Demo script

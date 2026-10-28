@@ -3,14 +3,16 @@
 // P1-14 · 拆分：单节点渲染 → canvas/NodeView.tsx（memo），缩放/框选纯函数 → canvas/gesture.ts（可单测）；
 //          本文件保留手势状态机（begin/move/up）与台面渲染。
 import type * as React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { DEVICES, useStore } from '../store';
 import { screenToBoard, snapThreshold } from '../lib/coords';
 import { matchSnap } from '../lib/snap';
 import { absOrigin, findContainerAt, subtreeIds } from '../lib/tree';
+import { spacingGaps, type Rect } from '../lib/spacing';
 import { useT } from '../lib/i18n';
 import { NodeView } from './canvas/NodeView';
+import { SpacingMarks } from './canvas/SpacingMarks';
 import { marqueeHits, resizeFrame, type Handle } from './canvas/gesture';
 import type { Frame, Node } from '../types';
 
@@ -61,6 +63,26 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
   const editingRef = useRef<EditState | null>(null);
   const spaceDown = useRef(false);
   const setEdit = (e: EditState | null) => { editingRef.current = e; setEditing(e); };
+
+  // F10 · 间距标注：单选且不在拖拽/缩放/框选/就地编辑时才计算（避免和手势视觉打架）
+  const spacing = useMemo(() => {
+    if (previewing || preview || marquee || editing || selection.length !== 1) return [];
+    const id = selection[0];
+    const node = board.nodes[id];
+    const parent = node?.parentId ? board.nodes[node.parentId] : undefined;
+    if (!node || !parent) return [];
+    const o = absOrigin(board, id);
+    const sel: Rect = { x: o.x, y: o.y, w: node.frame.w, h: node.frame.h };
+    const others: Rect[] = [];
+    for (const cid of parent.children) {
+      if (cid === id) continue;
+      const c = board.nodes[cid];
+      if (!c || c.hidden) continue;
+      const co = absOrigin(board, cid);
+      others.push({ x: co.x, y: co.y, w: c.frame.w, h: c.frame.h });
+    }
+    return spacingGaps(sel, others);
+  }, [board, selection, previewing, preview, marquee, editing]);
 
   // 空格平移（DV-03）：按住空格 + 拖动台面；Esc 手势中取消（P2-21，未落库直接丢弃预览）
   useEffect(() => {
@@ -361,6 +383,8 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
           <span style={{ color: 'var(--line)' }}>|</span>
           <span>{t('canvas_snap')}</span>
           <span style={{ color: 'var(--line)' }}>|</span>
+          <span>{t('canvas_spacing')}</span>
+          <span style={{ color: 'var(--line)' }}>|</span>
           {[0.5, 1, 1.5].map(z => (
             <button key={z} onClick={() => useStore.getState().actions.setZoom(z)}
               style={{ ...zoomBtn, ...(zoom === z ? zoomBtnActive : {}) }}>
@@ -455,6 +479,9 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
                 onEditEnd={handleEditEnd}
               />
             ))}
+
+            {/* F10 · 间距标注 */}
+            <SpacingMarks gaps={spacing} />
 
             {guides.v.map((x, i) => (
               <div key={`v${i}`} style={{ position: 'absolute', left: x, top: 0, width: 1, height: '100%', background: '#f43f5e', zIndex: 99, pointerEvents: 'none' }} />

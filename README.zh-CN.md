@@ -28,6 +28,7 @@ npm run build      # 生产构建
 | 多设备独立设计 | 电脑 1440×900 / 手机 390×844 / 手表 200×242；每页每设备独立保存；一键「复制自」其他设备 |
 | 拖拽搭建 | 库拖入、画布内自由拖动（本地预览态，抬手才落库）、八向缩放、Shift 锁比例、6px 吸附参考线、嵌套容器、模块旋转（0~359°，吸附/对齐按未旋转外接矩形近似） |
 | 编辑能力 | 多选/框选/整体移动、Ctrl+C/V、Delete（快捷键与属性面板按钮）、显隐、锁定、图层顺序、撤销重做（快照栈 50 步）；批量对齐 6 向（左/右/顶/底/水平居中/垂直居中）+ 水平/垂直等距分布（同容器内生效） |
+| 间距标注 | 单选元素时自动标注与同容器内相邻元素的最近间距（上下左右各取最近一条，水平/垂直重叠才标，间距 0 或重叠不标）；标注线只画在最贴近的两条边之间，拖拽/缩放/框选时自动隐藏 |
 | 事件绑定 | 属性面板直接编辑 action/target/note（跳转页面/提交/返回/关闭弹层/切换/绑定接口/外链） |
 | 主题面板 | 颜色 / 圆角 / 字体令牌可视化编辑，导出为 `tokens.css` 的 CSS 变量 |
 | 预览模式 | 只读画布（编辑手势全禁用）+ 可互动表单（输入框/密码/多行/下拉可真实操作）+ navigate 事件页内真实跳转 + 页面切换条 |
@@ -44,19 +45,19 @@ npm run build      # 生产构建
 ```
 src/
 ├─ types.ts            # 数据模型（Node/Board/Page/Project）+ 运行时校验（isProject/isValidProject）
-├─ lib/                # coords / tree（容器命中）/ snap（吸附）/ projectIndex（多项目索引）/ persist / i18n / id / aiClient
+├─ lib/                # coords / tree（容器命中）/ snap（吸附）/ spacing（间距标注）/ projectIndex / persist / png / i18n / id / aiClient
 ├─ store/              # zustand 切片：index（组合）/ project / editor / history / actions / projects（多项目）/ types / demo
 ├─ modules/            # registry.ts（30 模块唯一元数据源 + 容器单源）+ renderers.tsx（编辑/预览双态）
-├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ProjectModal / ErrorBoundary
-│  ├─ canvas/          # NodeView（memo 单节点渲染）/ gesture（缩放+框选纯函数）
+├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ProjectModal / ExportModal / ErrorBoundary
+│  ├─ canvas/          # NodeView（memo）/ gesture（缩放+框选纯函数）/ SpacingMarks（间距标注）
 │  └─ right/           # AiPanel / PropsPanel / shared（右栏拆分）
 ├─ ai/engine.ts        # 规则建议引擎
-└─ exporter/           # React 工程 zip 生成器（slug 唯一命名 + 多页路由）
+└─ exporter/           # React 工程 zip 生成器（slug 唯一命名 + 多页路由 + 范围裁剪）
 ```
 
 ## 测试
 
-共 **135 条**（`npm test`）：
+共 **142 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
@@ -76,6 +77,7 @@ src/
 - `src/exporter/guard.test.ts` — 漂移守卫 4 条（模板 props ⊆ 注册表；事件 key 拼法；表驱动完整性/无陈旧键）
 - `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（双页 + navigate 场景，供人工解压做真实构建验收）
 - `src/lib/png.test.ts` — 画板导图 6 条（倍率默认 2 与 1~3 钳制、NaN/Infinity 回退、文件名非法字符替换与连字符合并、空名回退 board、月日补零）
+- `src/lib/spacing.test.ts` — 间距标注 7 条（四方向最近间距、重叠区中点定位、另一轴无重叠不标、同方向取最小、重叠/贴边不标、四向同时给出）
 
 **导出工程真实构建验收**：已实测通过（zip → 解压 → `npm i` → `tsc + vite build` 绿）。
 
@@ -90,8 +92,9 @@ src/
 ## 路线
 
 - **v1.0**：纯前端单机版；AI 规则引擎；导出 React 静态工程
-- **v1.1（当前）**：事件绑定 UI（导出 navigate 真实跳页）、主题令牌编辑、预览互动、PR CI、store 切片化、漂移守卫测试
-- **后续**：可选远程 AI（embed/rerank 本地网关）、coverage 基线、图层树
+- **v1.1**：事件绑定 UI（导出 navigate 真实跳页）、主题令牌编辑、预览互动、PR CI、store 切片化、漂移守卫测试
+- **v1.2（当前）**：多项目管理、模板库、6 向对齐/等距分布、图层树增量、画板导出 PNG、导出范围（页面/设备）、间距标注
+- **后续**：可选远程 AI（embed/rerank 本地网关）、coverage 纳入门禁
 - **不做**：多人协作、响应式联动、真机预览、后端逻辑（见 S1~S3 交付开关）
 
 ## 演示脚本
