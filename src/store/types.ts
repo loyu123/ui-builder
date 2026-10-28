@@ -1,6 +1,7 @@
 // store 切片类型定义（B1 拆分）：状态切片与动作接口集中在此，避免循环依赖
 import type { Board, DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
 import type { ProjectEntry } from '../lib/projectIndex';
+import type { AlignDir, DistributeAxis } from '../lib/align';
 
 export type PagesSnapshot = Page[];
 
@@ -58,7 +59,8 @@ export interface Actions {
   copyBoardFrom: (from: DeviceId) => void;
   setNodeFlag: (id: string, key: 'locked' | 'hidden', value: boolean) => void;
   setNodeRotation: (id: string, deg: number) => void;
-  alignSelection: (dir: 'left' | 'right' | 'top' | 'bottom') => void;
+  alignSelection: (dir: AlignDir) => void;
+  distributeSelection: (axis: DistributeAxis) => void;
   setNodeEvent: (id: string, ev: string, spec: EventSpec) => void;
   updateTheme: (patch: {
     colors?: Record<string, string>;

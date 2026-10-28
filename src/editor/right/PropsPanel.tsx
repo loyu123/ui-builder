@@ -68,7 +68,7 @@ export function PropsPanel(): React.ReactNode {
   const board = page.boards[device];
   const sel = selection.length === 1 ? board.nodes[selection[0]] : undefined;
   const meta = sel ? REGISTRY_MAP[sel.type] : undefined;
-  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation, deleteNode, alignSelection } = useStore(s => s.actions);
+  const { setFrameField, copyBoardFrom, setNodeFlag, setNodeName, reorderNode, setNodeNote, setNodePos, setNodeEvent, setNodeRotation, deleteNode, alignSelection, distributeSelection } = useStore(s => s.actions);
   const pages = useStore(s => s.project.pages);
 
   return (
@@ -199,10 +199,20 @@ export function PropsPanel(): React.ReactNode {
           <div style={{ fontSize: 12, color: 'var(--ink-2)' }}>{t('selected_count', { n: selection.length })}</div>
           <div className="ub-label">{t('batch_align_hint')}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            {(['left', 'top', 'right', 'bottom'] as const).map(dir => (
+            {(['left', 'right', 'top', 'bottom', 'hcenter', 'vcenter'] as const).map(dir => (
               <button key={dir} onClick={() => alignSelection(dir)} className="ub-btn">{t('align_' + dir)}</button>
             ))}
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {(['h', 'v'] as const).map(axis => (
+              <button key={axis} onClick={() => distributeSelection(axis)}
+                disabled={selection.length < 3}
+                className="ub-btn" style={{ opacity: selection.length < 3 ? 0.5 : 1 }}>
+                {t('distribute_' + axis)}
+              </button>
+            ))}
+          </div>
+          <div className="ub-label-sm">{t('same_parent_hint')}</div>
           <button onClick={() => { for (const id of selection) deleteNode(id); }} className="ub-btn ub-btn-danger">
             {t('delete_all', { n: selection.length })}
           </button>

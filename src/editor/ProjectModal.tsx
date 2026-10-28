@@ -2,7 +2,8 @@
 // 样式走 index.css 的 .ub-* 类；文案走 i18n
 import { useEffect } from 'react';
 import { useStore } from '../store';
-import { useT } from '../lib/i18n';
+import { useT, useLang } from '../lib/i18n';
+import { TEMPLATES } from '../templates';
 
 function fmt(iso: string): string {
   const d = new Date(iso);
@@ -12,6 +13,7 @@ function fmt(iso: string): string {
 
 export function ProjectModal({ onClose }: { onClose: () => void }) {
   const t = useT();
+  const lang = useLang();
   const list = useStore(s => s.projects.list);
   const currentId = useStore(s => s.project.id);
   const busy = useStore(s => s.projects.busy);
@@ -85,8 +87,23 @@ export function ProjectModal({ onClose }: { onClose: () => void }) {
           disabled={busy}
           onClick={() => { void createProject().then(onClose); }}
         >
-          ＋ {t('new_project')}
+          ＋ {t('new_blank')}
         </button>
+
+        <div className="ub-label-sm">{t('templates_title')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          {TEMPLATES.map(tpl => (
+            <button
+              key={tpl.id}
+              className="ub-btn"
+              disabled={busy}
+              onClick={() => { void createProject({ from: tpl.build() }).then(onClose); }}
+            >
+              {lang === 'en' ? tpl.labelEn : tpl.label}
+            </button>
+          ))}
+        </div>
+
         <div className="ub-label-sm">{t('projects_hint')}</div>
       </div>
     </div>

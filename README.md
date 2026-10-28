@@ -33,7 +33,8 @@ npm run build           # production build
 | Properties panel | Registry-driven fields (text, color, number, select) + frame inputs + rotation + notes + per-node position label |
 | Event binding | Editable in the right panel (action / target / note); export generates `fire(key)` stubs; `navigate` to a project page becomes a real hash-route jump in the exported app |
 | Layer tree | Left panel shows the current board as a tree; click any node (including deep-nested) to select it |
-| Batch operations | Multi-select → align left/top/right/bottom to the common bounds; batch delete (one undo step) |
+| Batch operations | Multi-select → align 6 ways (left/right/top/bottom/center H/center V) + distribute evenly H/V (same container only); batch delete (one undo step) |
+| Templates | 5 built-in templates (login / message list / product detail / profile / empty state) creatable from the project dialog; built from registry metadata, with tests preventing prop-key drift |
 | Interactive preview | Read-only canvas (editing gestures disabled); inputs / password / textarea / select are real form controls; `navigate` events switch preview pages; page switcher bar |
 | AI suggestions (rules) | 5 rules: alignment / 8px spacing grid / WCAG contrast / type hierarchy / text overflow; cards with numeric evidence; apply uses the undo stack; local/remote mode shown in the panel |
 | Persistence | IndexedDB auto-save (1s debounce); schema migration + pre-migration backup; JSON import with structural deep-validation and readable errors; ErrorBoundary with graded fallbacks + real IndexedDB reset |
@@ -55,7 +56,7 @@ src/
 
 ## Tests
 
-**90 tests** (`npm test`):
+**114 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -64,7 +65,9 @@ src/
 - `src/lib/persist.projects.test.ts` — 6 multi-project tests (index registration / rename ordering / v1.1 single-key migration + backup / index self-heal / delete / clearAll)
 - `src/lib/projectIndex.test.ts` — 7 pure index tests (garbage tolerance / stale currentId / upsert ordering / remove fallback / prune / legacy upgrade)
 - `src/store/projects.test.ts` — 4 store flow tests (create / switch flushes pending edits / rename syncs index / delete current + last-project guard)
+- `src/lib/align.test.ts` — 11 align/distribute tests (bounds / 6 directions / single-axis / even spacing incl. idempotence and overlap)
 - `src/lib/i18n.test.ts` — 5 i18n tests (zh/en key parity / fallback / params / lang switch)
+- `src/templates/templates.test.ts` — 13 template tests (catalog / structure / registry types / props keys / default events / fresh instances)
 - `src/editor/canvas/gesture.test.ts` — 10 gesture tests (8-handle resize / min clamp / Shift ratio lock / marquee hit + edge-tangent)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 18 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import deep-validation, rotation, events/theme, graded snapshots, boundary cases, perf smoke)

@@ -2,6 +2,7 @@
 import { produce } from 'immer';
 import { uid } from '../lib/id';
 import { loadProject, migrate, saveProject } from '../lib/persist';
+import { alignFrames, distributeFrames } from '../lib/align';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
 import type { StoreApi } from 'zustand';
@@ -292,24 +293,45 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       set({ project: p });
     },
 
-    // P2-30 · 多选批量对齐：把所有选中节点对齐到选中集的公共边界（单次快照可整体撤销）
+    // P2-30 + F4 · 多选批量对齐：调用 lib/align.ts 纯函数（6 向），单次快照可整体撤销
+    // 约束：只对「与首个选中节点同父」的节点生效（跨容器坐标不可比）
     alignSelection: dir => {
       const s = get();
       if (s.editor.selection.length < 2) return;
       hist.pushHistory('align');
       const p = produce(s.project, draft => {
         const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
-        const nodes = s.editor.selection.map(id => board.nodes[id]).filter(n => n && n.parentId);
-        if (nodes.length < 2) return;
-        const minX = Math.min(...nodes.map(n => n.frame.x));
-        const minY = Math.min(...nodes.map(n => n.frame.y));
-        const maxX = Math.max(...nodes.map(n => n.frame.x + n.frame.w));
-        const maxY = Math.max(...nodes.map(n => n.frame.y + n.frame.h));
-        for (const n of nodes) {
-          if (dir === 'left') n.frame.x = minX;
-          if (dir === 'right') n.frame.x = maxX - n.frame.w;
-          if (dir === 'top') n.frame.y = minY;
-          if (dir === 'bottom') n.frame.y = maxY - n.frame.h;
+        const first = board.nodes[s.editor.selection[0]];
+        if (!first?.parentId) return;
+        const siblings = s.editor.selection
+          .map(id => board.nodes[id])
+          .filter(n => n && n.parentId === first.parentId);
+        const patches = alignFrames(siblings.map(n => ({ id: n.id, frame: n.frame })), dir);
+        for (const { id, frame } of patches) {
+          board.nodes[id].frame.x = frame.x;
+          board.nodes[id].frame.y = frame.y;
+        }
+      });
+      scheduleSave(p);
+      set({ project: p });
+    },
+
+    // F4 · 等距分布（水平/垂直）：首尾固定，中间节点等分净间距（≥3 个生效）
+    distributeSelection: axis => {
+      const s = get();
+      if (s.editor.selection.length < 3) return;
+      hist.pushHistory('distribute');
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        const first = board.nodes[s.editor.selection[0]];
+        if (!first?.parentId) return;
+        const siblings = s.editor.selection
+          .map(id => board.nodes[id])
+          .filter(n => n && n.parentId === first.parentId);
+        const patches = distributeFrames(siblings.map(n => ({ id: n.id, frame: n.frame })), axis);
+        for (const { id, frame } of patches) {
+          board.nodes[id].frame.x = frame.x;
+          board.nodes[id].frame.y = frame.y;
         }
       });
       scheduleSave(p);
