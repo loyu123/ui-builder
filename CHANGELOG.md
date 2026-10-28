@@ -4,6 +4,15 @@
 
 ## [未发布]
 
+### 新增
+
+- **设置弹层（SET-01）**：顶栏齿轮打开，可配置 AI 网关地址、API Key、Embedding 模型、Reranker 模型，并提供「测试连接」「保存」「清除」。配置只写本浏览器 `localStorage`（`ui-builder:ai-settings`），不入库、不随导出，改配置无需重新构建；AI 面板的模式提示可直接点开设置。
+
+### 变更
+
+- 移除 `.env.example` 与全部 `VITE_AI_*` 环境变量读取（仓库不再保存任何网关地址 / 密钥）；`.gitignore` 同步去掉 `.env.example` 例外。AI 网关改为运行时设置。
+- 文档（README 中英 / HANDOFF）改为描述运行时设置，不再要求复制 `.env`。
+
 ### 优化
 
 - 编辑器 chrome 里的彩色 emoji 图标统一换成为 **线性 SVG 图标**（`src/editor/icons.tsx`）：顶栏设备切换（显示器 / 手机 / 手表）、右栏「主题」「快捷键」折叠块、图层树锁定状态。

@@ -1,23 +1,20 @@
-// 远程 AI 网关客户端（可选增强，S3 默认不依赖）
-// 密钥只存在于本地 .env（已 gitignore）；所有调用失败均返回 null，上层回退到规则引擎
-const BASE = import.meta.env.VITE_AI_GATEWAY_BASE_URL as string | undefined;
-const KEY = import.meta.env.VITE_AI_GATEWAY_KEY as string | undefined;
+// 远程 AI 网关客户端（可选增强）
+// 配置来自「设置」里的运行时设置（src/lib/aiSettings.ts，只存本浏览器 localStorage），
+// 不再从 .env 读取：改配置不需要重新构建。所有调用失败均返回 null，上层回退到规则引擎。
+import { isAiConfigured, loadAiSettings, type AiSettings } from './aiSettings';
 
-export const EMBED_MODEL = (import.meta.env.VITE_AI_EMBEDDING_MODEL as string | undefined) ?? 'catinfo-Embedding';
-export const RERANK_MODEL = (import.meta.env.VITE_AI_RERANK_MODEL as string | undefined) ?? 'catinfo-Reranker';
-
-export function hasRemoteAi(): boolean {
-  return Boolean(BASE && KEY);
+function authHeaders(cfg: AiSettings): Record<string, string> {
+  return { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' };
 }
 
-/** OpenAI 兼容 /v1/embeddings；失败返回 null */
-export async function embed(input: string): Promise<number[] | null> {
-  if (!hasRemoteAi()) return null;
+/** OpenAI 兼容 /v1/embeddings；未配置或失败返回 null */
+export async function embed(input: string, cfg: AiSettings = loadAiSettings()): Promise<number[] | null> {
+  if (!isAiConfigured(cfg)) return null;
   try {
-    const res = await fetch(`${BASE}/v1/embeddings`, {
+    const res = await fetch(`${cfg.baseUrl}/v1/embeddings`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: EMBED_MODEL, input }),
+      headers: authHeaders(cfg),
+      body: JSON.stringify({ model: cfg.embedModel, input }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -28,18 +25,19 @@ export async function embed(input: string): Promise<number[] | null> {
   }
 }
 
-/** OpenAI 兼容 /v1/rerank；失败返回 null */
+/** OpenAI 兼容 /v1/rerank；未配置或失败返回 null */
 export async function rerank(
   query: string,
   documents: string[],
   topN = 3,
+  cfg: AiSettings = loadAiSettings(),
 ): Promise<Array<{ index: number; score: number }> | null> {
-  if (!hasRemoteAi()) return null;
+  if (!isAiConfigured(cfg)) return null;
   try {
-    const res = await fetch(`${BASE}/v1/rerank`, {
+    const res = await fetch(`${cfg.baseUrl}/v1/rerank`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: RERANK_MODEL, query, documents, top_n: topN }),
+      headers: authHeaders(cfg),
+      body: JSON.stringify({ model: cfg.rerankModel, query, documents, top_n: topN }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -49,5 +47,25 @@ export async function rerank(
       : null;
   } catch {
     return null;
+  }
+}
+
+/** 设置弹层的「测试连接」：成功返回 null，失败返回可读原因（不回传密钥） */
+export async function testAiConnection(cfg: AiSettings): Promise<string | null> {
+  if (!cfg.baseUrl) return 'EMPTY_URL';
+  if (!cfg.apiKey) return 'EMPTY_KEY';
+  if (!isAiConfigured(cfg)) return 'BAD_URL';
+  try {
+    const res = await fetch(`${cfg.baseUrl}/v1/embeddings`, {
+      method: 'POST',
+      headers: authHeaders(cfg),
+      body: JSON.stringify({ model: cfg.embedModel, input: 'ping' }),
+    });
+    if (!res.ok) return `HTTP ${res.status}`;
+    const data = await res.json();
+    const vec = data?.data?.[0]?.embedding;
+    return Array.isArray(vec) && vec.length > 0 ? null : 'NO_EMBEDDING';
+  } catch (err) {
+    return err instanceof Error && err.message ? err.message : 'NETWORK';
   }
 }

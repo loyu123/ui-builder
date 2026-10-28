@@ -47,6 +47,7 @@ src/
 │  ├─ AppShell.tsx          顶栏 + 三栏 + 弹层（项目 / 导出范围）+ toast
 │  ├─ Canvas.tsx            画板、手势、参考线、框选、拖入落位
 │  ├─ ExportModal.tsx       F8 导出范围弹层（页面 / 设备勾选）
+│  ├─ SettingsModal.tsx     SET-01 设置弹层（AI 网关 / Embedding / Reranker / 测试连接）
 │  ├─ canvas/NodeView.tsx   单节点渲染（memo）
 │  ├─ canvas/gesture.ts     缩放/框选纯函数（可单测）
 │  ├─ canvas/SpacingMarks.tsx  F10 间距标注渲染（纯展示）
@@ -65,6 +66,7 @@ src/
 │  ├─ persist.ts            IndexedDB 读写（按项目分键 + 迁移 + 备份）
 │  ├─ projectIndex.ts       多项目索引纯函数
 │  ├─ png.ts                F3 画板导图（DOM → SVG foreignObject → canvas）
+│  ├─ aiSettings.ts         SET-01 AI 网关设置（localStorage 读写 + 归一化/校验/脱敏）
 │  └─ i18n.ts               zh/en 字典（键必须两边同步，有单测兜底）
 └─ exporter/
    ├─ exporter.ts           React 工程 zip 生成（组件裁剪 + hash 路由 + 事件接口位）
@@ -78,6 +80,7 @@ src/
 - IndexedDB 键：索引 `ui-builder:index`，项目体 `ui-builder:project:<id>`；1s 防抖落盘，切项目前强制 flush。
 - 迁移：v1.1 单 key → v1.2 分键，迁移前留备份；索引自愈（数据缺失条目自动剔除）。
 - 导入：JSON 深校验（父子断裂/根节点缺失会拒绝并保持当前项目不变）。
+- 应用级设置（非项目数据）：AI 网关配置存 `localStorage` 的 `ui-builder:ai-settings`（`{ baseUrl, apiKey, embedModel, rerankModel }`），随浏览器走、清缓存即失效；`.env` / `VITE_AI_*` 已全部移除，仓库不再保存任何网关地址或密钥。
 
 ## 5. 关键决策与取舍
 
@@ -105,7 +108,7 @@ src/
 - 间距标注：只标「同容器兄弟节点」之间，不含容器内边距 / 跨层级元素；多选、拖拽、缩放、框选、就地编辑时不显示；数值取整展示（内部保留小数）。
 - 导出工程每页 `index.tsx` 默认导出一个设备组件（移动端优先，范围内无移动端则取第一个）；导出产物不做响应式自适应。
 - 旋转是视觉变换，吸附/框选/AI 对齐按未旋转外接矩形近似。
-- 远端 AI 网关只在 `.env` 预留；无配置时纯规则引擎。
+- 远端 AI 网关（Embedding / Reranker）在顶栏 **齿轮 → 设置** 里运行时配置：写 `localStorage` 的 `ui-builder:ai-settings`，不写库、不随导出、无需重新构建；未配置或调用失败时回退纯规则引擎。https 页面访问 http 网关会被浏览器拦截（混合内容）。
 - 预览模式只读编辑手势，表单交互与 `navigate` 跳转可用。
 
 ## 8. 剩余待办

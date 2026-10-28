@@ -16,7 +16,7 @@ npm run lint       # oxlint
 npm run build      # 生产构建
 ```
 
-> 本地 AI 网关（可选）：复制 `.env.example` 为 `.env` 并填入地址与密钥。`.env` 已被 gitignore，密钥不入库；未配置时 AI 建议自动回退为纯规则引擎。
+> 远程 AI 网关（可选）：点顶栏 **齿轮 → 设置**，填网关地址、API Key、Embedding / Reranker 模型，可一键「测试连接」。配置只存本浏览器 `localStorage`（`ui-builder:ai-settings`），**不入库、不随导出、改配置无需重新构建**；留空则 AI 建议自动回退为纯规则引擎。注意：编辑器以 https 打开时，浏览器会拦截 http 网关（混合内容）。
 
 > 示例项目：访问 `http://localhost:5173/?demo=login` 可以示例登录页**新建一个项目**（不会覆盖已有项目；多项目见下方「项目管理」）。
 
@@ -45,7 +45,7 @@ npm run build      # 生产构建
 ```
 src/
 ├─ types.ts            # 数据模型（Node/Board/Page/Project）+ 运行时校验（isProject/isValidProject）
-├─ lib/                # coords / tree（容器命中）/ snap（吸附）/ spacing（间距标注）/ projectIndex / persist / png / i18n / id / aiClient
+├─ lib/                # coords / tree（容器命中）/ snap（吸附）/ spacing（间距标注）/ projectIndex / persist / png / aiSettings（AI 设置）/ aiClient / i18n / id
 ├─ store/              # zustand 切片：index（组合）/ project / editor / history / actions / projects（多项目）/ types / demo
 ├─ modules/            # registry.ts（30 模块唯一元数据源 + 容器单源）+ renderers.tsx（编辑/预览双态）
 ├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ProjectModal / ExportModal / ErrorBoundary
@@ -84,7 +84,7 @@ src/
 ## 实现说明
 
 - **撤销/重做**：整步快照栈（deep clone pages，上限 50 步），拖动手势 400ms 内合并为一步；拖拽/缩放过程只更新画布本地 state，抬手才写 store。
-- **AI 建议**：规则引擎（5 类，纯本地计算）；`.env` 预留远程 AI 网关管道，未配置时自动回退，应用建议走通用撤销栈。
+- **AI 建议**：规则引擎（5 类，纯本地计算）；远程 AI 网关（Embedding / Reranker）在「设置」里运行时配置，未配置时自动回退，应用建议走通用撤销栈。
 - **旋转**：视觉层 transform；吸附、框选命中、AI 对齐按未旋转外接矩形近似。
 - **错误兜底**：ErrorBoundary 包裹应用；「清空缓存并重置」会真正删除 IndexedDB 主键与迁移备份。
 - **CI**：pull_request → lint + test + build（ci.yml）；push main → Pages 部署（pages.yml）。

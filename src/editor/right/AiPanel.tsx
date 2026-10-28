@@ -3,7 +3,7 @@
 // P1-17 · 重复内联样式改用 index.css 的 .ub-* 类（.ub-btn/.ub-card/.ub-field/...），色值走 CSS 变量
 import { useRef, useState } from 'react';
 import { useStore } from '../../store';
-import { hasRemoteAi } from '../../lib/aiClient';
+import { isAiConfigured } from '../../lib/aiSettings';
 import { runRules, type Suggestion } from '../../ai/engine';
 import { exportJson, importJson, lastExportText } from './shared';
 import { useT } from '../../lib/i18n';
@@ -20,6 +20,8 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
   const historyLog = useStore(s => s.history.log);
   const theme = useStore(s => s.project.theme);
   const updateTheme = useStore(s => s.actions.updateTheme);
+  const aiReady = useStore(s => isAiConfigured(s.settings.ai));   // SET-01 · 网关是否已配置
+  const openSettings = useStore(s => s.actions.openSettings);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [applied, setApplied] = useState(0);
   const [aiTick, setAiTick] = useState(0);
@@ -133,9 +135,14 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
         ))}
       </div>
 
-      {/* P2-33 · AI 模式状态可见：本地规则 / 远程网关 */}
-      <div className="ub-label-sm" style={{ color: hasRemoteAi() ? '#166534' : undefined, textAlign: 'center' }}>
-        {hasRemoteAi() ? t('ai_remote_mode') : t('ai_local_mode')}
+      {/* P2-33 + SET-01 · AI 模式状态可见：本地规则 / 远程网关，可直接去设置 */}
+      <div
+        className="ub-label-sm"
+        style={{ color: aiReady ? '#166534' : undefined, textAlign: 'center', cursor: 'pointer' }}
+        onClick={openSettings}
+        title={t('settings_title')}
+      >
+        {aiReady ? t('ai_remote_mode') : t('ai_local_mode')}
       </div>
 
       {/* 操作记录 */}

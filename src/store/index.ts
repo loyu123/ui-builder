@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { emptyProject } from './project';
 import { initialEditor } from './editor';
 import { makeActions } from './actions';
+import { loadAiSettings } from '../lib/aiSettings';
 import type { Store } from './types';
 
 export const useStore = create<Store>((set, get) => ({
@@ -12,8 +13,9 @@ export const useStore = create<Store>((set, get) => ({
   editor: initialEditor,
   history: { past: [], future: [], lastTag: '', lastAt: 0, log: [] },
   projects: { list: [], currentId: null, busy: false },   // F1 · 多项目索引快照（hydrate 后填充）
+  settings: { ai: loadAiSettings(), open: false },        // SET-01 · 本机设置（localStorage，同步读取）
   actions: makeActions(set, get),
 }));
 
 export { DEVICES, createEmptyProject } from './project';
-export type { Store, EditorSlice, HistorySlice, Actions } from './types';
+export type { Store, EditorSlice, HistorySlice, SettingsSlice, Actions } from './types';

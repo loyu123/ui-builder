@@ -1,6 +1,7 @@
 // store 切片类型定义（B1 拆分）：状态切片与动作接口集中在此，避免循环依赖
 import type { Board, DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
 import type { ProjectEntry } from '../lib/projectIndex';
+import type { AiSettings } from '../lib/aiSettings';
 import type { AlignDir, DistributeAxis } from '../lib/align';
 
 export type PagesSnapshot = Page[];
@@ -32,6 +33,12 @@ export interface ProjectsSlice {
   list: ProjectEntry[];
   currentId: string | null;
   busy: boolean;
+}
+
+// SET-01 · 应用级设置（AI 网关 / Embedding / Reranker），与项目数据解耦
+export interface SettingsSlice {
+  ai: AiSettings;
+  open: boolean;    // 设置弹层是否打开（顶栏齿轮与 AI 面板都能唤起）
 }
 
 export interface Actions {
@@ -80,6 +87,11 @@ export interface Actions {
   switchProject: (id: string) => Promise<void>;
   renameProject: (id: string, name: string) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
+  // SET-01 · AI 网关设置
+  setAiSettings: (patch: Partial<AiSettings>) => void;
+  resetAiSettings: () => void;
+  openSettings: () => void;
+  closeSettings: () => void;
 }
 
 export interface Store {
@@ -87,5 +99,6 @@ export interface Store {
   editor: EditorSlice;
   history: HistorySlice;
   projects: ProjectsSlice;
+  settings: SettingsSlice;
   actions: Actions;
 }

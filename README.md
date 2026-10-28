@@ -17,7 +17,7 @@ npm run test:coverage   # coverage for core logic (lib / store / ai / exporter)
 npm run build           # production build
 ```
 
-> Optional local AI gateway: copy `.env.example` to `.env` and fill in URL + key. `.env` is gitignored; secrets stay local. Without config, AI suggestions fall back to the pure rule engine.
+> Optional remote AI gateway: open **gear → Settings** and fill in URL, API key, Embedding / Reranker models; there is a one-click **Test connection**. Settings live only in this browser's `localStorage` (`ui-builder:ai-settings`) — never in the repo, never in exports, no rebuild needed. Leave them empty to stay on the pure rule engine. Note: when the editor is served over https, the browser blocks http gateways (mixed content).
 
 > Demo: open `http://localhost:5173/?demo=login` to create a **new project** from a ready-made login-page design (existing projects are untouched).
 
@@ -47,7 +47,7 @@ npm run build           # production build
 ```
 src/
 ├─ types.ts            # Data model (Node / Board / Page / Project) + runtime validation
-├─ lib/                # coords, tree, snap, spacing, persist (migrations + clearAll), png, id, aiClient
+├─ lib/                # coords, tree, snap, spacing, persist (migrations + clearAll), png, aiSettings, aiClient, id
 ├─ store/              # index (composition) + project / editor / history / actions / types / demo
 ├─ modules/            # registry.ts (30 modules, CONTAINER_TYPES single source) + renderers.tsx
 ├─ editor/             # AppShell, Canvas, LeftPanel, RightPanel, ExportModal, ErrorBoundary
@@ -100,7 +100,7 @@ PR CI (`ci.yml`) runs lint + test + build on pull requests; `main` pushes deploy
 ## Implementation notes
 
 - **Undo/redo:** graded snapshot stack — page-level operations (add/delete page) snapshot all pages; everything else snapshots only the current board. Drag gestures within 400ms merge into one step; drag/resize preview lives in local state and commits once on pointer-up.
-- **AI:** v1 is a local rule engine (5 rules). `.env` reserves a remote AI gateway (embed/rerank); without it, rules-only. Applied suggestions go through the shared undo stack.
+- **AI:** v1 is a local rule engine (5 rules). A remote AI gateway (embed/rerank) is configured at runtime in Settings; without it, rules-only. Applied suggestions go through the shared undo stack.
 - **Error handling:** graded `ErrorBoundary` — app-level full-page fallback with refresh / real IndexedDB reset; compact boundaries around canvas and right panel so one panel crashing never takes down the editor.
 - **Export stack:** generated `web/` uses React 19 aligned with the editor; the contrast rule uses WCAG luminance with per-channel hex parsing. Multi-page designs export with a hash router; `navigate` events targeting a project page emit real `location.hash` jumps, other actions stay as stubs.
 - **Rotation & snapping:** node rotation (`0–359°`) is a visual transform; snapping, marquee hit-testing and AI alignment rules still work on the **unrotated axis-aligned bounding box**, so a rotated module may snap by its outer frame. Preview mode is read-only for editing gestures but interactive for forms and `navigate` jumps.

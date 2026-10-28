@@ -1,7 +1,6 @@
-# 本地密钥与环境配置 —— 不入库
+# 本地密钥类文件 —— 一律不入库（AI 网关配置改在应用「设置」里）
 .env
 .env.*
-!.env.example
 
 node_modules/
 dist/

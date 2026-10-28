@@ -2,6 +2,7 @@
 import { produce } from 'immer';
 import { uid } from '../lib/id';
 import { loadProject, migrate, saveProject } from '../lib/persist';
+import { clearAiSettings, saveAiSettings, type AiSettings } from '../lib/aiSettings';
 import { alignFrames, distributeFrames } from '../lib/align';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
@@ -463,5 +464,17 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       if (!saved) await saveProject(project, { makeCurrent: true });
       await get().actions.refreshProjects();
     },
+
+    // SET-01 · AI 网关设置：写穿 localStorage（不含项目数据，随浏览器走）
+    setAiSettings: (patch: Partial<AiSettings>) => {
+      const ai = saveAiSettings({ ...get().settings.ai, ...patch });
+      set(s => ({ settings: { ...s.settings, ai } }));
+    },
+    resetAiSettings: () => {
+      const ai = clearAiSettings();
+      set(s => ({ settings: { ...s.settings, ai } }));
+    },
+    openSettings: () => set(s => ({ settings: { ...s.settings, open: true } })),
+    closeSettings: () => set(s => ({ settings: { ...s.settings, open: false } })),
   };
 }

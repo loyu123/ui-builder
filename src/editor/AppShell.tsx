@@ -13,7 +13,8 @@ import { RightPanel } from './RightPanel';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ProjectModal } from './ProjectModal';
 import { ExportModal } from './ExportModal';
-import { IconDevice } from './icons';
+import { SettingsModal } from './SettingsModal';
+import { IconDevice, IconSettings } from './icons';
 import type { ExportScope } from '../exporter/scope';
 import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
@@ -29,6 +30,9 @@ export function AppShell() {
   const [dragType, setDragType] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);   // F1 · 项目管理弹层
   const [showExport, setShowExport] = useState(false);       // F8 · 导出范围弹层
+  const showSettings = useStore(s => s.settings.open);       // SET-01 · 设置弹层（AI 网关）
+  const openSettings = useStore(s => s.actions.openSettings);
+  const closeSettings = useStore(s => s.actions.closeSettings);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showToast(msg: string) {
@@ -226,7 +230,7 @@ export function AppShell() {
 
           <span style={{ flex: 1 }} />
 
-          {/* 预览 / 导出 PNG / 导出工程 / 语言切换 */}
+          {/* 预览 / 导出 PNG / 导出工程 / 设置 / 语言切换 */}
           <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
             {previewing ? t('exit_preview') : t('preview')}
           </button>
@@ -240,6 +244,15 @@ export function AppShell() {
           </button>
           <button onClick={() => setShowExport(true)} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
             {t('export_zip')}
+          </button>
+          <button
+            onClick={openSettings}
+            title={t('settings_title')}
+            aria-label={t('settings_title')}
+            className="ub-btn ub-btn-pad"
+            style={{ flex: 'none', display: 'flex', alignItems: 'center', padding: '0 8px' }}
+          >
+            <IconSettings size={14} />
           </button>
           <button
             onClick={() => setLang(getLang() === 'zh' ? 'en' : 'zh')}
@@ -270,6 +283,15 @@ export function AppShell() {
           <ExportModal
             onClose={() => setShowExport(false)}
             onConfirm={scope => { setShowExport(false); void exportZip(scope); }}
+          />
+        )}
+
+        {/* SET-01 · 设置弹层（AI 网关 / Embedding / Reranker） */}
+        {showSettings && (
+          <SettingsModal
+            onClose={closeSettings}
+            onSaved={() => showToast(t('settings_saved'))}
+            onCleared={() => showToast(t('settings_cleared'))}
           />
         )}
 
