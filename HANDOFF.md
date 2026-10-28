@@ -118,4 +118,5 @@ src/
 - 提交格式：`<type>(<scope>): <摘要>`；type = feat | fix | refactor | perf | test | docs | chore | ci；scope = canvas | store | exporter | ai | editor | docs | ci。
 - 一次改动配一次验证：`oxlint` + `vitest run` + `tsc --noEmit` / `vite build`，三项都过再提交。
 - 新增 UI 文案必须 zh/en 同步；新增纯函数优先补单测（本项目测试成本低、收益高）。
+- 编辑器 chrome 的图标统一走 `src/editor/icons.tsx` 的线性 SVG（24 格视框 / 1.7px 描边 / `currentColor`），不要再引入彩色 emoji；画布内的模块占位内容（🖼 🔔 📶 🔋 等）属于设计稿素材，保持原样。
 - PowerShell → WSL 传参时括号/管道易被吞：复杂命令用 `wsl -d UIBuilder -- bash -lc "..."`，或把脚本写到 `/mnt/c` 下再执行。

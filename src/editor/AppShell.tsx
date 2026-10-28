@@ -13,6 +13,7 @@ import { RightPanel } from './RightPanel';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ProjectModal } from './ProjectModal';
 import { ExportModal } from './ExportModal';
+import { IconDevice } from './icons';
 import type { ExportScope } from '../exporter/scope';
 import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
@@ -216,7 +217,7 @@ export function AppShell() {
                   color: d === device ? '#ffffff' : 'var(--ink-3)',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
-                {d === 'desktop' ? '🖥' : d === 'mobile' ? '📱' : '⌚'}
+                <IconDevice device={d} />
                 {t('device_' + d)}
                 <span style={{ fontSize: 10, color: d === device ? '#d1d5db' : 'var(--faint)' }}>{DEVICES[d].w}</span>
               </button>
@@ -225,7 +226,7 @@ export function AppShell() {
 
           <span style={{ flex: 1 }} />
 
-          {/* 预览 / 导出 PNG / 导出工程 / 语言切换 / 方向标签 */}
+          {/* 预览 / 导出 PNG / 导出工程 / 语言切换 */}
           <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
             {previewing ? t('exit_preview') : t('preview')}
           </button>
@@ -246,9 +247,6 @@ export function AppShell() {
             className="ub-btn" style={{ flex: 'none', fontSize: 10, padding: '3px 8px' }}>
             {getLang() === 'zh' ? 'EN' : '中'}
           </button>
-          <span style={{ fontSize: 10, color: 'var(--faint)', border: '1px solid var(--line)', borderRadius: 6, padding: '3px 8px' }}>
-            {t('direction_tag')}
-          </span>
         </header>
 
         {/* 三栏（预览模式只留画布） */}

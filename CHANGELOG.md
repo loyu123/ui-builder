@@ -2,6 +2,13 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)；v1.2.0 之前的历史见 `git log --oneline`。
 
+## [未发布]
+
+### 优化
+
+- 编辑器 chrome 里的彩色 emoji 图标统一换成为 **线性 SVG 图标**（`src/editor/icons.tsx`）：顶栏设备切换（显示器 / 手机 / 手表）、右栏「主题」「快捷键」折叠块、图层树锁定状态。
+- 移除顶栏右下角「方向 A · 浅色专业」标签（含 `direction_tag` 文案键）。
+
 ## [1.2.0] · 2026-10-28
 
 ### 新增

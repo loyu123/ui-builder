@@ -6,6 +6,7 @@ import { useStore, DEVICES } from '../store';
 import { REGISTRY, REGISTRY_MAP } from '../modules/registry';
 import { useT, t, moduleLabel, categoryLabel } from '../lib/i18n';
 import { buildLayerRows, type LayerRow } from '../lib/tree';
+import { IconLock } from './icons';
 import type { Board } from '../types';
 
 // P2-29 + F5 · 图层树行（扁平列表渲染）：点击选中、折叠/展开、行内切换隐藏与锁定
@@ -54,9 +55,9 @@ function LayerRowView({ row, board, onToggle }: {
         title={t('flag_locked')}
         aria-label={t('flag_locked')}
         aria-pressed={Boolean(n.locked)}
-        style={{ fontSize: 9, padding: '0 2px', lineHeight: 1.4, color: n.locked ? 'var(--accent)' : 'var(--faint-3)' }}
+        style={{ padding: '0 2px', lineHeight: 1.4, color: n.locked ? 'var(--accent)' : 'var(--faint-3)' }}
         onClick={e => { e.stopPropagation(); setNodeFlag(n.id, 'locked', !n.locked); }}>
-        {n.locked ? '🔒' : '🔓'}
+        <IconLock open={!n.locked} size={11} />
       </button>
     </div>
   );

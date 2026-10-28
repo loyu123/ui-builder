@@ -7,6 +7,7 @@ import { hasRemoteAi } from '../../lib/aiClient';
 import { runRules, type Suggestion } from '../../ai/engine';
 import { exportJson, importJson, lastExportText } from './shared';
 import { useT } from '../../lib/i18n';
+import { IconKeyboard, IconPalette } from '../icons';
 
 export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
   const t = useT();
@@ -166,7 +167,10 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
 
       {/* P2-11 · 主题令牌编辑（导出 tokens.css 使用） */}
       <details className="ub-details">
-        <summary>{t('theme_title')}</summary>
+        <summary style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <IconPalette size={12} />
+          {t('theme_title')}
+        </summary>
         <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
           <div className="ub-label-sm">{t('theme_colors')}</div>
           {Object.entries(theme.colors).map(([k, v]) => (
@@ -199,7 +203,10 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
 
       {/* P2-14 · 快捷键说明（原生 details 折叠，不抢快捷键） */}
       <details className="ub-details">
-        <summary>{t('shortcuts_title')}</summary>
+        <summary style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <IconKeyboard size={12} />
+          {t('shortcuts_title')}
+        </summary>
         <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', fontSize: 11, color: 'var(--ink-3)' }}>
           {([
             ['Ctrl/⌘+Z', 'sc_undo'], ['Ctrl/⌘+Shift+Z', 'sc_redo'],
