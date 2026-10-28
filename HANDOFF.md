@@ -1,11 +1,11 @@
 # HANDOFF · ui-builder 交接说明
 
 > 面向接手者：先读这份，再读 `README.zh-CN.md`（功能清单/测试清单）与 `DEMO.md`（演示路径）。
-> 最后更新：2026-10-28（M3 收尾 + M4 导出范围落地后）
+> 最后更新：2026-10-28（v1.2.0 发布）
 
 ## 1. 现在是什么状态
 
-- 版本线：v1.1.0 已发布，v1.2 迭代中（多项目 / 模板 / 对齐 / 图层树 / 画板导图 / 导出范围 / 间距标注已完成）。
+- 版本线：v1.1.0 已发布；v1.2.0 功能全部落地（多项目 / 模板 / 对齐 / 图层树 / 画板导图 / 导出范围 / 间距标注），版本号与 CHANGELOG 已更新，剩 Pages 部署线上回归。
 - 质量门：**142 条单测全绿**、`oxlint` 0 warning、`tsc --noEmit` 干净、`vite build` 绿。CI（lint + test + build）为合并前提。
 - 纯前端单机应用：无后端、无账号、数据全在浏览器 IndexedDB。
 
@@ -110,7 +110,7 @@ src/
 
 ## 8. 剩余待办
 
-- 发布侧：README/DEMO 文案定稿、GitHub Pages 部署回归、v1.2 版本号与 CHANGELOG。
+- v1.2.0 已发布（版本号 / CHANGELOG / README 徽标均已更新）；本地已按 `GITHUB_PAGES=1` 构建并 `vite preview` 验证 `/ui-builder/` 首页与 JS 资源 200，剩 push 后看线上 actions 结果。
 - 可选：coverage 基线纳入 CI（现为本地 `npm run test:coverage`，门禁仅 lint+test+build）。
 
 ## 9. 提交与协作约定

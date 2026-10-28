@@ -1,6 +1,6 @@
 # UI Builder
 
-> **v1.1.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Handoff notes](./HANDOFF.md)
+> **v1.2.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Changelog](./CHANGELOG.md) · [Handoff notes](./HANDOFF.md)
 
 A visual UI builder: blank canvas + drag-and-drop modules → multi-device layout design → event binding / theme tokens / notes → one-click export of an interactive multi-page React project.
 

@@ -1,6 +1,6 @@
 # 界面搭建器（UI Builder）
 
-> **v1.1.0** · [MIT License](./LICENSE) · [English](./README.md) · [交接说明 HANDOFF](./HANDOFF.md)
+> **v1.2.0** · [MIT License](./LICENSE) · [English](./README.md) · [更新记录](./CHANGELOG.md) · [交接说明 HANDOFF](./HANDOFF.md)
 
 可视化 UI 搭建工具：空白画布 + 拖拽模块 → 多设备界面设计 → 事件绑定 / 主题 / 功能备注 → 一键导出可交互的 React 多页工程。
 
