@@ -104,6 +104,7 @@ export function ProjectModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
+        <div className="ub-label-sm">{t('templates_devices')}</div>
         <div className="ub-label-sm">{t('projects_hint')}</div>
       </div>
     </div>

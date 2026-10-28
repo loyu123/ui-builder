@@ -1,6 +1,7 @@
 // P1-3.1 · 树工具单测：容器命中（最深优先/exclude）、防自嵌套、子树集合、绝对原点
+// F5 · 图层树扁平化：深度优先顺序、折叠、名称过滤（保留父链）
 import { describe, it, expect } from 'vitest';
-import { absOrigin, isSelfOrDescendant, findContainerAt, subtreeIds } from './tree';
+import { absOrigin, isSelfOrDescendant, findContainerAt, subtreeIds, buildLayerRows } from './tree';
 import type { Board, Frame, Node } from '../types';
 
 function mk(
@@ -61,5 +62,43 @@ describe('lib/tree · 容器命中与子树', () => {
     expect(absOrigin(b, 'btn')).toEqual({ x: 60, y: 60 });
     expect(absOrigin(b, 'card2')).toEqual({ x: 30, y: 30 });
     expect(absOrigin(b, 'root')).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('lib/tree · buildLayerRows（图层树）', () => {
+  it('无关键词：深度优先拍平，depth 递增，根不出现', () => {
+    const rows = buildLayerRows(board());
+    expect(rows.map(r => [r.id, r.depth])).toEqual([
+      ['card1', 0], ['card2', 1], ['btn', 2], ['grp', 0],
+    ]);
+    expect(rows.map(r => r.hasChildren)).toEqual([true, true, false, false]);
+  });
+
+  it('折叠：被折叠节点自身仍在列表中，其子级不展开', () => {
+    const rows = buildLayerRows(board(), '', new Set(['card1']));
+    expect(rows.map(r => r.id)).toEqual(['card1', 'grp']);
+    expect(rows[0].collapsed).toBe(true);
+  });
+
+  it('折叠深层节点只影响其子树', () => {
+    const rows = buildLayerRows(board(), '', new Set(['card2']));
+    expect(rows.map(r => r.id)).toEqual(['card1', 'card2', 'grp']);
+  });
+
+  it('名称过滤：命中项及其父链保留，未命中分支剪掉', () => {
+    const rows = buildLayerRows(board(), 'btn');
+    expect(rows.map(r => r.id)).toEqual(['card1', 'card2', 'btn']);
+  });
+
+  it('名称过滤：按类型名也命中；过滤时忽略折叠状态', () => {
+    expect(buildLayerRows(board(), 'group').map(r => r.id)).toEqual(['grp']);
+    const rows = buildLayerRows(board(), 'card2', new Set(['card1']));
+    expect(rows.map(r => r.id)).toEqual(['card1', 'card2']);   // 过滤时忽略折叠，但不命中子级仍剪掉
+  });
+
+  it('无命中时返回空数组；根缺失也不抛错', () => {
+    expect(buildLayerRows(board(), 'zzz')).toEqual([]);
+    const empty: Board = { device: 'mobile', frame: { w: 390, h: 844 }, rootId: 'ghost', nodes: {} };
+    expect(buildLayerRows(empty)).toEqual([]);
   });
 });

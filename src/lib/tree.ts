@@ -58,3 +58,52 @@ export function subtreeIds(board: Board, id: string): Set<string> {
   }
   return out;
 }
+
+// ---------- F5 · 图层树：扁平化 + 名称过滤 + 折叠 ----------
+export interface LayerRow {
+  id: string;
+  depth: number;
+  hasChildren: boolean;
+  collapsed: boolean;
+}
+
+/**
+ * 把画板根下的节点树拍平成可渲染的行列表。
+ * - keyword 非空时只保留「自身命中或后代命中」的分支（父链保留以便定位），且忽略折叠状态
+ * - keyword 为空时按 collapsed 过滤子级
+ */
+export function buildLayerRows(
+  board: Board,
+  keyword = '',
+  collapsed: Set<string> = new Set(),
+): LayerRow[] {
+  const root = board.nodes[board.rootId];
+  if (!root) return [];
+  const kw = keyword.trim().toLowerCase();
+  const hit = (n: Node) => {
+    if (!kw) return true;
+    return n.name.toLowerCase().includes(kw) || n.type.toLowerCase().includes(kw);
+  };
+  const memo = new Map<string, boolean>();
+  const hasHit = (id: string): boolean => {
+    const n = board.nodes[id];
+    if (!n) return false;
+    if (memo.has(id)) return memo.get(id)!;
+    const r = hit(n) || n.children.some(hasHit);
+    memo.set(id, r);
+    return r;
+  };
+
+  const out: LayerRow[] = [];
+  const walk = (id: string, depth: number) => {
+    const n = board.nodes[id];
+    if (!n) return;
+    if (kw && !hasHit(id)) return;
+    const hasChildren = n.children.length > 0;
+    const isCollapsed = !kw && collapsed.has(id);
+    out.push({ id, depth, hasChildren, collapsed: isCollapsed });
+    if (hasChildren && !isCollapsed) n.children.forEach(cid => walk(cid, depth + 1));
+  };
+  root.children.forEach(cid => walk(cid, 0));
+  return out;
+}

@@ -32,9 +32,9 @@ npm run build           # production build
 | Editing | Multi-select / marquee / group move, Ctrl+C/V, Delete (keyboard + button), hide, lock, z-order, arrow-key nudge (1px, Shift 8px), undo/redo (graded snapshot stack, 50 steps) |
 | Properties panel | Registry-driven fields (text, color, number, select) + frame inputs + rotation + notes + per-node position label |
 | Event binding | Editable in the right panel (action / target / note); export generates `fire(key)` stubs; `navigate` to a project page becomes a real hash-route jump in the exported app |
-| Layer tree | Left panel shows the current board as a tree; click any node (including deep-nested) to select it |
+| Layer tree | Current board as a tree: indent, click to select (synced with canvas, auto-scrolls into view), keyword filter, collapse/expand, per-row hide & lock toggles |
 | Batch operations | Multi-select → align 6 ways (left/right/top/bottom/center H/center V) + distribute evenly H/V (same container only); batch delete (one undo step) |
-| Templates | 5 built-in templates (login / message list / product detail / profile / empty state) creatable from the project dialog; built from registry metadata, with tests preventing prop-key drift |
+| Templates | 5 built-in templates (login / message list / product detail / profile / empty state), each shipping **both mobile and desktop layouts**; built from registry metadata, with tests preventing prop-key drift |
 | Interactive preview | Read-only canvas (editing gestures disabled); inputs / password / textarea / select are real form controls; `navigate` events switch preview pages; page switcher bar |
 | AI suggestions (rules) | 5 rules: alignment / 8px spacing grid / WCAG contrast / type hierarchy / text overflow; cards with numeric evidence; apply uses the undo stack; local/remote mode shown in the panel |
 | Persistence | IndexedDB auto-save (1s debounce); schema migration + pre-migration backup; JSON import with structural deep-validation and readable errors; ErrorBoundary with graded fallbacks + real IndexedDB reset |
@@ -56,11 +56,11 @@ src/
 
 ## Tests
 
-**114 tests** (`npm test`):
+**121 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
-- `src/lib/tree.test.ts` — 6 tree tests (deepest container hit / blank / exclude / self-or-descendant / subtreeIds / absOrigin)
+- `src/lib/tree.test.ts` — 12 tree tests (deepest container hit / blank / exclude / self-or-descendant / subtreeIds / absOrigin; layer rows flattening, collapse, keyword filter)
 - `src/lib/persist.test.ts` — 4 IndexedDB tests (round-trip / empty / v1→v2 migration / clearAll) via fake-indexeddb
 - `src/lib/persist.projects.test.ts` — 6 multi-project tests (index registration / rename ordering / v1.1 single-key migration + backup / index self-heal / delete / clearAll)
 - `src/lib/projectIndex.test.ts` — 7 pure index tests (garbage tolerance / stale currentId / upsert ordering / remove fallback / prune / legacy upgrade)

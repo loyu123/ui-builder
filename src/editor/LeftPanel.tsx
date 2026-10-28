@@ -1,94 +1,119 @@
 // 左栏 · C 方向样式：页面（带宽标注）/ 组件分组（计数+折叠）/ 模块库（两列网格缩略）
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type * as React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useStore, DEVICES } from '../store';
 import { REGISTRY, REGISTRY_MAP } from '../modules/registry';
 import { useT, t, moduleLabel, categoryLabel } from '../lib/i18n';
+import { buildLayerRows, type LayerRow } from '../lib/tree';
 import type { Board } from '../types';
 
-// P2-29 · 图层树行：递归渲染节点层级，点击选中
-function LayerRow({ id, board, depth }: { id: string; board: Board; depth: number }): ReactNode {
-  const n = board.nodes[id];
+// P2-29 + F5 · 图层树行（扁平列表渲染）：点击选中、折叠/展开、行内切换隐藏与锁定
+function LayerRowView({ row, board, onToggle }: {
+  row: LayerRow;
+  board: Board;
+  onToggle: (id: string) => void;
+}): ReactNode {
+  const n = board.nodes[row.id];
   const selection = useStore(s => s.editor.selection);
   const select = useStore(s => s.actions.select);
+  const setNodeFlag = useStore(s => s.actions.setNodeFlag);
   if (!n) return null;
-  const selected = selection.includes(id);
+  const selected = selection.includes(row.id);
   return (
-    <>
-      <div
-        role="button"
-        aria-selected={selected}
-        onClick={() => select([id])}
-        className={`ub-row ub-row-layer${selected ? ' active' : ''}`}
-        style={{
-          paddingLeft: depth * 12 + 8,   // P1-17 · 层级缩进仍需动态内联
-          color: selected ? undefined : n.hidden ? 'var(--ghost)' : undefined,
-        }}>
-        <span style={{ fontSize: 9, color: 'var(--faint-2)', width: 8, flexShrink: 0 }}>{n.children.length ? '▾' : '·'}</span>
-        <span className="ub-row-label">{n.name}</span>
-        <span style={{ fontSize: 9, color: 'var(--faint-2)', flexShrink: 0 }}>
-          {REGISTRY_MAP[n.type] ? moduleLabel(REGISTRY_MAP[n.type]) : n.type}
-          {n.locked ? ' 🔒' : ''}{n.hidden ? ` ${t('hidden_suffix')}` : ''}
-        </span>
-      </div>
-      {n.children.map(cid => <LayerRow key={cid} id={cid} board={board} depth={depth + 1} />)}
-    </>
+    <div
+      role="button"
+      aria-selected={selected}
+      data-layer-id={row.id}
+      onClick={() => select([row.id])}
+      className={`ub-row ub-row-layer${selected ? ' active' : ''}`}
+      style={{
+        paddingLeft: row.depth * 12 + 6,   // P1-17 · 层级缩进仍需动态内联
+        color: selected ? undefined : n.hidden ? 'var(--ghost)' : undefined,
+      }}>
+      <span
+        onClick={e => { e.stopPropagation(); if (row.hasChildren) onToggle(row.id); }}
+        style={{ fontSize: 9, color: 'var(--faint-2)', width: 10, flexShrink: 0, cursor: row.hasChildren ? 'pointer' : 'default' }}>
+        {row.hasChildren ? (row.collapsed ? '▸' : '▾') : '·'}
+      </span>
+      <span className="ub-row-label">{n.name}</span>
+      <span style={{ fontSize: 9, color: 'var(--faint-2)', flexShrink: 0, marginRight: 2 }}>
+        {REGISTRY_MAP[n.type] ? moduleLabel(REGISTRY_MAP[n.type]) : n.type}
+      </span>
+      <button
+        className="ub-icon-btn"
+        title={t('flag_hidden')}
+        aria-label={t('flag_hidden')}
+        aria-pressed={Boolean(n.hidden)}
+        style={{ fontSize: 10, padding: '0 2px', lineHeight: 1.4, color: n.hidden ? 'var(--accent)' : 'var(--faint-3)' }}
+        onClick={e => { e.stopPropagation(); setNodeFlag(n.id, 'hidden', !n.hidden); }}>
+        {n.hidden ? '⊘' : '◉'}
+      </button>
+      <button
+        className="ub-icon-btn"
+        title={t('flag_locked')}
+        aria-label={t('flag_locked')}
+        aria-pressed={Boolean(n.locked)}
+        style={{ fontSize: 9, padding: '0 2px', lineHeight: 1.4, color: n.locked ? 'var(--accent)' : 'var(--faint-3)' }}
+        onClick={e => { e.stopPropagation(); setNodeFlag(n.id, 'locked', !n.locked); }}>
+        {n.locked ? '🔒' : '🔓'}
+      </button>
+    </div>
   );
 }
 
 // —— 模块缩略图形（C 方向：tile 内画小形状） ——
 function Thumb({ type }: { type: string }): React.ReactNode {
-  const line = { height: 3, borderRadius: 2, background: '#d8d2c8' };
+  const line = { height: 3, borderRadius: 2, background: 'var(--ghost)' };
   switch (type) {
     case 'button-primary':
-      return <div style={{ width: '100%', height: 10, borderRadius: 5, background: '#f97316' }} />;
+      return <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'var(--accent)' }} />;
     case 'button-secondary':
-      return <div style={{ width: '100%', height: 10, borderRadius: 5, border: '1px solid #c9c2b6' }} />;
+      return <div style={{ width: '100%', height: 10, borderRadius: 5, border: '1px solid var(--faint-3)' }} />;
     case 'input': case 'password': case 'textarea': case 'select':
-      return <div style={{ width: '100%', height: 12, border: '1px solid #c9c2b6', borderRadius: 3, borderBottomWidth: 2 }} />;
+      return <div style={{ width: '100%', height: 12, border: '1px solid var(--faint-3)', borderRadius: 3, borderBottomWidth: 2 }} />;
     case 'heading':
-      return <div style={{ ...line, width: '70%', height: 5, background: '#8a8378' }} />;
+      return <div style={{ ...line, width: '70%', height: 5, background: 'var(--ink-faint)' }} />;
     case 'paragraph':
       return <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%' }}><div style={line} /><div style={{ ...line, width: '60%' }} /></div>;
     case 'image':
-      return <div style={{ width: '100%', height: '100%', border: '1px solid #c9c2b6', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b9b2a6', fontSize: 9 }}>△</div>;
+      return <div style={{ width: '100%', height: '100%', border: '1px solid var(--faint-3)', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint-2)', fontSize: 9 }}>△</div>;
     case 'avatar':
-      return <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#f6c8a8', border: '1px solid #eeb083' }} />;
+      return <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#dbeafe', border: '1px solid #bfdbfe' }} />;
     case 'icon':
-      return <div style={{ color: '#8a8378', fontSize: 12 }}>★</div>;
+      return <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>★</div>;
     case 'switch':
-      return <div style={{ width: 22, height: 12, borderRadius: 999, background: '#f97316', position: 'relative' }}><div style={{ position: 'absolute', right: 1, top: 1, width: 10, height: 10, borderRadius: '50%', background: '#fff' }} /></div>;
+      return <div style={{ width: 22, height: 12, borderRadius: 999, background: 'var(--accent)', position: 'relative' }}><div style={{ position: 'absolute', right: 1, top: 1, width: 10, height: 10, borderRadius: '50%', background: '#fff' }} /></div>;
     case 'divider':
-      return <div style={{ width: '100%', height: 1, background: '#c9c2b6' }} />;
+      return <div style={{ width: '100%', height: 1, background: 'var(--faint-3)' }} />;
     case 'card': case 'group':
-      return <div style={{ width: '100%', height: '100%', minHeight: 14, border: '1px solid #c9c2b6', borderRadius: 4 }} />;
+      return <div style={{ width: '100%', height: '100%', minHeight: 14, border: '1px solid var(--faint-3)', borderRadius: 4 }} />;
     case 'tabbar': case 'topnav':
-      return <div style={{ width: '100%', display: 'flex', gap: 2 }}><div style={{ flex: 1, height: 8, background: '#efe9e0', borderRadius: 2 }} /><div style={{ flex: 1, height: 8, background: '#f97316', borderRadius: 2, opacity: .8 }} /><div style={{ flex: 1, height: 8, background: '#efe9e0', borderRadius: 2 }} /></div>;
+      return <div style={{ width: '100%', display: 'flex', gap: 2 }}><div style={{ flex: 1, height: 8, background: 'var(--line-soft)', borderRadius: 2 }} /><div style={{ flex: 1, height: 8, background: 'var(--accent)', borderRadius: 2, opacity: .8 }} /><div style={{ flex: 1, height: 8, background: 'var(--line-soft)', borderRadius: 2 }} /></div>;
     case 'list-item':
-      return <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 3 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: '#e6dfd4' }} /><div style={{ ...line, flex: 1 }} /></div>;
+      return <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 3 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--line-soft)' }} /><div style={{ ...line, flex: 1 }} /></div>;
     case 'table':
-      return <div style={{ width: '100%', height: '100%', minHeight: 14, border: '1px solid #c9c2b6', borderRadius: 2, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, padding: 1 }}>{[...Array(6)].map((_, i) => <div key={i} style={{ background: '#efe9e0' }} />)}</div>;
+      return <div style={{ width: '100%', height: '100%', minHeight: 14, border: '1px solid var(--faint-3)', borderRadius: 2, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, padding: 1 }}>{[...Array(6)].map((_, i) => <div key={i} style={{ background: 'var(--line-soft)' }} />)}</div>;
     case 'stat':
-      return <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}><div style={{ ...line, width: '40%' }} /><div style={{ ...line, width: '80%', height: 5, background: '#8a8378' }} /></div>;
+      return <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}><div style={{ ...line, width: '40%' }} /><div style={{ ...line, width: '80%', height: 5, background: 'var(--ink-faint)' }} /></div>;
     case 'progress':
-      return <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#e6dfd4', overflow: 'hidden' }}><div style={{ width: '60%', height: '100%', background: '#f97316' }} /></div>;
+      return <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'var(--line-soft)', overflow: 'hidden' }}><div style={{ width: '60%', height: '100%', background: 'var(--accent)' }} /></div>;
     case 'message-bubble':
-      return <div style={{ width: '80%', height: 12, borderRadius: 6, borderBottomLeftRadius: 2, background: '#efe9e0' }} />;
+      return <div style={{ width: '80%', height: 12, borderRadius: 6, borderBottomLeftRadius: 2, background: 'var(--line-soft)' }} />;
     case 'comment':
-      return <div style={{ width: '100%', display: 'flex', gap: 3, alignItems: 'center' }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: '#e6dfd4' }} /><div style={{ ...line, flex: 1 }} /></div>;
+      return <div style={{ width: '100%', display: 'flex', gap: 3, alignItems: 'center' }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--line-soft)' }} /><div style={{ ...line, flex: 1 }} /></div>;
     case 'notification':
-      return <div style={{ width: '100%', height: 10, borderRadius: 3, background: '#f97316', opacity: .25 }} />;
+      return <div style={{ width: '100%', height: 10, borderRadius: 3, background: 'var(--accent)', opacity: .25 }} />;
     case 'mobile-statusbar':
       return <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ ...line, width: 10 }} /><div style={{ ...line, width: 14 }} /></div>;
     case 'home-indicator':
-      return <div style={{ width: 26, height: 3, borderRadius: 2, background: '#8a8378' }} />;
+      return <div style={{ width: 26, height: 3, borderRadius: 2, background: 'var(--ink-faint)' }} />;
     case 'watch-face':
-      return <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid #8a8378' }} />;
+      return <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--ink-faint)' }} />;
     case 'watch-list-row':
-      return <div style={{ width: '100%', height: 10, borderRadius: 5, background: '#efe9e0' }} />;
+      return <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'var(--line-soft)' }} />;
     default:
-      return <div style={{ width: '100%', height: 12, border: '1px solid #c9c2b6', borderRadius: 3 }} />;
+      return <div style={{ width: '100%', height: 12, border: '1px solid var(--faint-3)', borderRadius: 3 }} />;
   }
 }
 
@@ -130,6 +155,8 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
   const currentPageId = useStore(s => s.editor.currentPageId);
   const device = useStore(s => s.editor.currentDevice);
   const [kw, setKw] = useState('');
+  const [layerKw, setLayerKw] = useState('');                 // F5 · 图层名称过滤
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());   // F5 · 折叠集合
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
   const { setPage, addPage, renamePage, deletePage } = useStore(s => s.actions);
   const layerRoot = useStore(s => {
@@ -137,6 +164,19 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
     return pg.boards[s.editor.currentDevice];
   });
   const devW = DEVICES[device].w;
+  const selection = useStore(s => s.editor.selection);
+  const layerRows = buildLayerRows(layerRoot, layerKw, collapsed);
+  const toggleCollapse = (id: string) => setCollapsed(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  // F5 · 画布选中反向同步：树内滚动到可视区
+  useEffect(() => {
+    const id = selection.length === 1 ? selection[0] : null;
+    if (!id) return;
+    document.querySelector(`[data-layer-id="${id}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [selection]);
 
   if (previewing) return null;   // hooks 之后才允许条件 return（rules-of-hooks）
 
@@ -176,14 +216,23 @@ export function LeftPanel({ previewing }: { previewing?: boolean }) {
 
       {/* P2-29 · 图层树：当前画板节点结构，点击选中深层模块 */}
       <div className="ub-head" style={{ marginTop: 2, padding: '10px 10px 5px', fontSize: 12, letterSpacing: 1, color: 'var(--muted)', userSelect: 'none' }}>{t('layers_of', { d: t('device_' + device) })}</div>
-      <div style={{ borderBottom: '1px solid var(--line-soft)', maxHeight: 168, overflowY: 'auto', paddingBottom: 4 }}>
-        {(() => {
-          const root = layerRoot.nodes[layerRoot.rootId];
-          if (!root || root.children.length === 0) {
-            return <div style={{ padding: '4px 10px 6px', fontSize: 10, color: 'var(--faint-3)' }}>{t('board_empty')}</div>;
-          }
-          return root.children.map(cid => <LayerRow key={cid} id={cid} board={layerRoot} depth={0} />);
-        })()}
+      <div style={{ padding: '0 10px 5px' }}>
+        <input
+          className="ub-field"
+          placeholder={t('layer_filter')}
+          value={layerKw}
+          onChange={e => setLayerKw(e.target.value)}
+          style={{ borderRadius: 8, padding: '4px 8px', background: 'var(--bg-input)' }}
+        />
+      </div>
+      <div style={{ borderBottom: '1px solid var(--line-soft)', maxHeight: 180, overflowY: 'auto', paddingBottom: 4 }}>
+        {layerRows.length === 0 ? (
+          <div style={{ padding: '4px 10px 6px', fontSize: 10, color: 'var(--faint-3)' }}>
+            {layerKw ? t('no_match') : t('board_empty')}
+          </div>
+        ) : layerRows.map(row => (
+          <LayerRowView key={row.id} row={row} board={layerRoot} onToggle={toggleCollapse} />
+        ))}
       </div>
 
       {/* 组件分组（C：分类 + 计数 + 折叠） */}
