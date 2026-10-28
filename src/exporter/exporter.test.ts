@@ -73,7 +73,7 @@ describe('EX · 导出工程端到端', () => {
     useStore.setState({ project: createEmptyProject() });
     const a = useStore.getState().actions;
     a.addNode('button-primary', { x: 10, y: 10, w: 200, h: 48 });
-    // registry 默认按钮底色即主题 primary（#f97316）→ 应生成 var 引用
+    // registry 默认按钮底色即主题 primary（#2563eb）→ 应生成 var 引用
     const bytes = await exportProjectZip(useStore.getState().project);
     const zip = await JSZip.loadAsync(bytes);
     const tsx = await zip.file('ui-builder-export/web/src/pages/Page/Mobile.tsx')!.async('string');

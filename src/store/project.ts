@@ -30,7 +30,7 @@ export function emptyProject(): Project {
     createdAt: new Date().toISOString(),
     pages: [page],
     theme: {
-      colors: { primary: '#f97316', bg: '#ffffff', text: '#1f2328', muted: '#6b7280' },
+      colors: { primary: '#2563eb', bg: '#ffffff', text: '#111827', muted: '#6b7280' },
       radius: { sm: 6, md: 10, pill: 999 },
       font: { family: 'system-ui, "PingFang SC", "Microsoft YaHei", sans-serif', base: 14 },
     },

@@ -53,7 +53,7 @@ export const REGISTRY: ModuleDef[] = [
   {
     type: 'group', label: '分组容器', labelEn: 'Group', category: '基础容器', w: 320, h: 200,
     isContainer: true,
-    props: {}, style: { background: 'rgba(249,115,22,.05)', radius: 8 },
+    props: {}, style: { background: 'rgba(37,99,235,.06)', radius: 8 },
     fields: [fColor('background', '填充'), fNum('radius', '圆角')],
   },
   {
@@ -91,7 +91,7 @@ export const REGISTRY: ModuleDef[] = [
   },
   {
     type: 'avatar', label: '头像框', labelEn: 'Avatar', category: '文字与媒体', w: 56, h: 56,
-    props: { name: '会员', src: '' }, style: { background: '#fde8d7', color: '#c2410c', fontSize: 20 },
+    props: { name: '会员', src: '' }, style: { background: '#dbeafe', color: '#1d4ed8', fontSize: 20 },
     fields: [fText('name', '姓名（无图时显示首字）'), fText('src', '头像地址'), fColor('background', '底色')],
   },
 
@@ -130,7 +130,7 @@ export const REGISTRY: ModuleDef[] = [
   {
     type: 'button-primary', label: '主按钮', labelEn: 'Primary button', category: '操作与导航', w: 200, h: 48,
     props: { label: '登录' },
-    style: { background: '#f97316', color: '#ffffff', radius: 8, fontSize: 16, fontWeight: 600 },
+    style: { background: '#2563eb', color: '#ffffff', radius: 8, fontSize: 16, fontWeight: 600 },
     fields: [fText('label', '文字'), fColor('background', '填充'), fColor('color', '文字色'), fNum('radius', '圆角'), fNum('fontSize', '字号')],
   },
   {
@@ -142,7 +142,7 @@ export const REGISTRY: ModuleDef[] = [
   {
     type: 'link', label: '链接框', labelEn: 'Link', category: '操作与导航', w: 200, h: 40,
     props: { label: '忘记密码？' },
-    style: { color: '#f97316', fontSize: 13 },
+    style: { color: '#2563eb', fontSize: 13 },
     fields: [fText('label', '文字'), fColor('color', '颜色'), fNum('fontSize', '字号')],
   },
   {
@@ -198,7 +198,7 @@ export const REGISTRY: ModuleDef[] = [
   {
     type: 'notification', label: '通知条', labelEn: 'Notification', category: '社交与通知', w: 360, h: 48,
     props: { text: '您有一条新的系统通知' },
-    style: { background: '#fff7ed', color: '#9a3412', fontSize: 13, radius: 8 },
+    style: { background: '#eff6ff', color: '#1e40af', fontSize: 13, radius: 8 },
     fields: [fText('text', '通知文字'), fColor('background', '底色'), fColor('color', '文字色'), fNum('radius', '圆角')],
   },
 

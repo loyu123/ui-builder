@@ -56,7 +56,7 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
   }
 
   const ruleColor: Record<Suggestion['rule'], string> = {
-    align: '#0ea5e9', spacing: '#8b5cf6', contrast: '#ef4444', hierarchy: '#f59e0b', length: '#10b981',
+    align: '#2563eb', spacing: '#8b5cf6', contrast: '#ef4444', hierarchy: '#f59e0b', length: '#10b981',
   };
 
   return (
@@ -100,9 +100,9 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
               <div style={{ display: 'flex', gap: 8 }}>
                 {s.patches.length > 0 ? (
                   <>
-                    <button onClick={() => apply(s)} className="ub-btn ub-btn-accent">{t('ai_apply')}</button>
+                    <button onClick={() => apply(s)} className="ub-btn ub-btn-accent ub-btn-flex">{t('ai_apply')}</button>
                     <button onClick={() => setSuggestions(prev => (prev ?? []).filter(x => x.id !== s.id))}
-                      className="ub-btn">{t('ai_ignore')}</button>
+                      className="ub-btn ub-btn-flex">{t('ai_ignore')}</button>
                   </>
                 ) : (
                   <span className="ub-label">{t('ai_manual')}</span>
@@ -158,8 +158,8 @@ export function AiPanel({ onOpenProps }: { onOpenProps: () => void }) {
 
       {/* 导入导出（收纳在助手底部） */}
       <div style={{ display: 'flex', gap: 6 }}>
-        <button onClick={exportJson} className="ub-btn">{t('export_json')}</button>
-        <button onClick={() => fileRef.current?.click()} className="ub-btn">{t('import_json')}</button>
+        <button onClick={exportJson} className="ub-btn ub-btn-flex">{t('export_json')}</button>
+        <button onClick={() => fileRef.current?.click()} className="ub-btn ub-btn-flex">{t('import_json')}</button>
       </div>
       <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />

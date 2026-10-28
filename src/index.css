@@ -1,28 +1,29 @@
-/* WS-02 · C 方向（极简中性 + 橙色强调）设计变量
-   P1-17 · 变量与编辑器真实用色（暖灰系）对齐，.ub-* 类名体系统一引用变量；
-   各 UI 文件不再复制内联色值，换肤只改这里。 */
+/* WS-03 · A 方向（浅色专业 + 蓝色强调）设计变量
+   白底 + 蓝灰中性色 + 信息密度高（Figma 感）；换肤只改这里。
+   P1-17 · .ub-* 类名体系统一引用这些变量，UI 文件不写死色值。 */
 :root {
-  --ink: #1f2328;
+  --ink: #111827;
   --ink-2: #374151;
-  --ink-3: #57534e;
-  --ink-faint: #8a8378;
+  --ink-3: #4b5563;
+  --ink-faint: #6b7280;
   --muted: #6b7280;
-  --faint: #a8a199;
-  --faint-2: #b9b2a6;
-  --faint-3: #c9c2b6;
-  --ghost: #d8d2c8;
-  --line: #ece7dd;
-  --line-soft: #f0ebe2;
-  --bg: #faf9f7;
-  --bg-soft: #f5f2ec;
-  --bg-input: #fbf9f5;
-  --bg-card: #faf8f4;
+  --faint: #9ca3af;
+  --faint-2: #a5acb8;
+  --faint-3: #bcc2cc;
+  --ghost: #d3d8e0;
+  --line: #e3e6ea;
+  --line-soft: #eef0f3;
+  --bg: #f7f8fa;
+  --bg-soft: #f1f3f6;
+  --bg-input: #f8f9fb;
+  --bg-card: #f8f9fb;
   --panel: #ffffff;
-  --accent: #f97316;
-  --accent-soft: #fff7ed;
-  --accent-row: #fff1e6;
-  --accent-ink: #c2410c;
-  --danger: #b91c1c;
+  --canvas-desk: #eef1f5;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --accent-row: #e8f0fe;
+  --accent-ink: #1d4ed8;
+  --danger: #dc2626;
   --danger-line: #fecaca;
   --radius-sm: 6px;
   --radius: 8px;
@@ -61,8 +62,11 @@ body {
 /* 表单控件（fieldInputStyle 迁移） */
 .ub-field { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 12px; background: var(--panel); outline: none; }
 
-/* 按钮：.ub-btn 基类 + 修饰（cardBtn 迁移） */
-.ub-btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); border-radius: var(--radius); font-size: 12px; padding: 6px 0; flex: 1; cursor: pointer; }
+/* 按钮：.ub-btn 基类 + 修饰（cardBtn 迁移）
+   注意：基类不带 flex 伸缩——竖排容器里 flex:1 会把按钮拉成巨块（v1.2 修复）；
+   需要在横排里均分宽度时显式加 .ub-btn-flex */
+.ub-btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); border-radius: var(--radius); font-size: 12px; padding: 6px 12px; cursor: pointer; }
+.ub-btn-flex { flex: 1; }
 .ub-btn-sm { padding: 3px 7px; font-size: 11px; flex: none; }
 .ub-btn-pad { padding: 6px 16px; font-size: 13px; }
 .ub-btn-accent { border: none; background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }

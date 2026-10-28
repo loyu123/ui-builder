@@ -25,13 +25,13 @@ export class ErrorBoundary extends Component<{ children: ReactNode; compact?: bo
           <div style={{
             padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', gap: 8, minHeight: 120,
-            background: '#fff7ed', border: '1px dashed #fdba74', borderRadius: 10,
+            background: '#eff6ff', border: '1px dashed #fdba74', borderRadius: 10,
             fontSize: 12, color: '#9a3412',
           }}>
             <span>⚠️ {this.props.label ?? '此面板'}渲染出错，其余功能不受影响</span>
             <button
               onClick={() => this.setState(s => ({ error: null, resetKey: s.resetKey + 1 }))}
-              style={{ border: '1px solid #fdba74', background: '#fff', color: '#c2410c', borderRadius: 8, padding: '5px 16px', fontSize: 12, cursor: 'pointer' }}>
+              style={{ border: '1px solid #fdba74', background: '#fff', color: '#1d4ed8', borderRadius: 8, padding: '5px 16px', fontSize: 12, cursor: 'pointer' }}>
               重试
             </button>
           </div>
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; compact?: bo
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => window.location.reload()}
-              style={{ border: 'none', background: '#f97316', color: '#fff', borderRadius: 8, padding: '8px 20px', fontSize: 13, cursor: 'pointer' }}>
+              style={{ border: 'none', background: 'var(--accent)', color: '#fff', borderRadius: 8, padding: '8px 20px', fontSize: 13, cursor: 'pointer' }}>
               刷新页面
             </button>
             <button onClick={() => { void clearAll().then(() => window.location.reload()); }}

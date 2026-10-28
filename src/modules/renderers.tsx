@@ -158,7 +158,7 @@ export function ModuleRenderer({ node, interactive = false }: { node: Node; inte
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, height: 10, borderRadius: 999, background: '#e5e7eb', overflow: 'hidden' }}>
-            <div style={{ width: `${v}%`, height: '100%', background: '#f97316', borderRadius: 999 }} />
+            <div style={{ width: `${v}%`, height: '100%', background: '#2563eb', borderRadius: 999 }} />
           </div>
           <span style={{ fontSize: 11, color: '#6b7280' }}>{v}%</span>
         </div>
@@ -171,7 +171,7 @@ export function ModuleRenderer({ node, interactive = false }: { node: Node; inte
       const radius = safeNum(node.style.radius, 12);
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: right ? 'flex-end' : 'flex-start', alignItems: 'center' }}>
-          <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: radius, background: right ? '#f97316' : (s.background as string), color: right ? '#fff' : (s.color as string), fontSize: s.fontSize, boxSizing: 'border-box' }}>
+          <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: radius, background: right ? '#2563eb' : (s.background as string), color: right ? '#fff' : (s.color as string), fontSize: s.fontSize, boxSizing: 'border-box' }}>
             {String(p.text ?? '')}
           </div>
         </div>
@@ -221,7 +221,7 @@ export function ModuleRenderer({ node, interactive = false }: { node: Node; inte
     case 'watch-list-row':
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', padding: '0 10px', boxSizing: 'border-box', borderRadius: 8, gap: 6, ...s }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: '#f97316' }} />
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: '#2563eb' }} />
           <span style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>{String(p.text ?? '')}</span>
         </div>
       );
@@ -267,7 +267,7 @@ function SwitchModule({ node }: { node: Node }) {
       onClick={e => { e.stopPropagation(); setOn(v => !v); }}
       style={{
         width: '100%', height: '100%', maxWidth: 52, borderRadius: 999,
-        background: on ? '#f97316' : '#d1d5db', position: 'relative',
+        background: on ? '#2563eb' : '#d1d5db', position: 'relative',
         cursor: 'pointer', transition: 'background .15s',
       }}
     >
@@ -291,7 +291,7 @@ function TabbarModule({ node, style }: { node: Node; style: React.CSSProperties 
           onClick={e => { e.stopPropagation(); setActive(i); }}
           style={{
             flex: 1, textAlign: 'center', cursor: 'pointer',
-            color: i === active ? '#f97316' : (style.color as string),
+            color: i === active ? '#2563eb' : (style.color as string),
             fontWeight: i === active ? 700 : 400,
           }}
         >

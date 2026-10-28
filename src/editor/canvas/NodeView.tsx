@@ -32,7 +32,7 @@ const HANDLE_POS: Record<Handle, React.CSSProperties> = {
   sw: { bottom: -5, left: -5 },
 };
 
-const ACCENT = '#f97316';
+const ACCENT = 'var(--accent)';
 
 export interface NodeViewProps {
   node: Node;
@@ -150,7 +150,7 @@ function NodeViewImpl(p: NodeViewProps): ReactNode {
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           outline: `2px dashed ${ACCENT}`, outlineOffset: -2,
-          background: 'rgba(249,115,22,.06)', zIndex: 5,
+          background: 'rgba(37,99,235,.08)', zIndex: 5,
         }} />
       )}
       {selected && (['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as Handle[]).map(h => (

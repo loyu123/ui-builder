@@ -351,23 +351,23 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         <div style={{
           position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
           zIndex: 50, display: 'flex', alignItems: 'center', gap: 10,
-          background: '#ffffff', border: '1px solid #ece7dd', borderRadius: 999,
-          padding: '5px 14px', fontSize: 11, color: '#8a8378',
+          background: '#ffffff', border: '1px solid var(--line)', borderRadius: 999,
+          padding: '5px 14px', fontSize: 11, color: 'var(--ink-faint)',
           boxShadow: '0 2px 10px rgba(31,35,40,.06)', whiteSpace: 'nowrap',
         }}>
-          <span>{t('canvas_zoom_label')} <b style={{ color: '#1f2328' }}>{Math.round(zoom * 100)}%</b></span>
-          <span style={{ color: '#ece7dd' }}>|</span>
+          <span>{t('canvas_zoom_label')} <b style={{ color: 'var(--ink)' }}>{Math.round(zoom * 100)}%</b></span>
+          <span style={{ color: 'var(--line)' }}>|</span>
           <span>{t('canvas_guides')}</span>
-          <span style={{ color: '#ece7dd' }}>|</span>
+          <span style={{ color: 'var(--line)' }}>|</span>
           <span>{t('canvas_snap')}</span>
-          <span style={{ color: '#ece7dd' }}>|</span>
+          <span style={{ color: 'var(--line)' }}>|</span>
           {[0.5, 1, 1.5].map(z => (
             <button key={z} onClick={() => useStore.getState().actions.setZoom(z)}
               style={{ ...zoomBtn, ...(zoom === z ? zoomBtnActive : {}) }}>
               {z * 100}%
             </button>
           ))}
-          <span style={{ fontSize: 10, color: '#c9c2b6' }}>{t('canvas_ctrl_wheel')}</span>
+          <span style={{ fontSize: 10, color: 'var(--faint-3)' }}>{t('canvas_ctrl_wheel')}</span>
         </div>
       )}
 
@@ -376,24 +376,24 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
         <div style={{
           position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 30,
           display: 'flex', alignItems: 'center', gap: 8,
-          background: '#2a3548', color: '#e6ebf2', border: '1px solid #f97316',
+          background: '#2a3548', color: '#e6ebf2', border: '1px solid var(--accent)',
           borderRadius: 999, padding: '5px 14px', fontSize: 12,
           boxShadow: '0 4px 14px rgba(0,0,0,.35)',
         }}>
-          <span style={{ color: '#f97316' }}>{t('preview_badge')}</span>
+          <span style={{ color: 'var(--accent)' }}>{t('preview_badge')}</span>
           <select
             value={page.id}
             onChange={e => setPreviewPageId(e.target.value)}
             style={{ background: 'transparent', color: '#e6ebf2', border: 'none', outline: 'none', fontSize: 12, cursor: 'pointer' }}
           >
-            {pages.map(pg => <option key={pg.id} value={pg.id} style={{ color: '#1f2328' }}>{pg.name}</option>)}
+            {pages.map(pg => <option key={pg.id} value={pg.id} style={{ color: 'var(--ink)' }}>{pg.name}</option>)}
           </select>
           <span style={{ fontSize: 10, color: '#9aa7b8' }}>{t('preview_hint')}</span>
         </div>
       )}
 
       {/* 画板台面（C：暖米色；可滚动；Ctrl+滚轮以鼠标为锚点缩放） */}
-      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', background: '#f2ede4', position: 'relative' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', background: 'var(--canvas-desk)', position: 'relative' }}>
         <div style={{ width: worldW, height: worldH + 40, position: 'relative' }}>
           {/* 缩放外壳（含电脑窗口 chrome） */}
           <div style={{
@@ -404,7 +404,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
             {/* 电脑画板：窗口 chrome（C） */}
             {device === 'desktop' && (
               <div style={{
-                height: 30, background: '#f7f4ee', border: '1px solid #e0d9cc', borderBottom: 'none',
+                height: 30, background: 'var(--bg-soft)', border: '1px solid var(--line)', borderBottom: 'none',
                 borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center',
                 padding: '0 12px', gap: 5, boxSizing: 'border-box',
               }}>
@@ -413,8 +413,8 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
                 <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#34d399' }} />
                 <span style={{
                   marginLeft: 12, flex: 1, maxWidth: 300, background: '#ffffff',
-                  border: '1px solid #e0d9cc', borderRadius: 5,
-                  fontSize: 10, color: '#a8a199', padding: '2px 10px',
+                  border: '1px solid var(--line)', borderRadius: 5,
+                  fontSize: 10, color: 'var(--faint)', padding: '2px 10px',
                 }}>
                   {page.name} / 登录页
                 </span>
@@ -427,7 +427,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
               style={{
                 width: dev.w, height: dev.h,
                 background: '#ffffff',
-                border: isOver ? '2px solid #f97316' : '1px solid #ddd5c7',
+                border: isOver ? '2px solid var(--accent)' : '1px solid var(--line)',
                 borderRadius: device === 'desktop' ? '0 0 10px 10px' : 24,
                 boxShadow: '0 4px 24px rgba(87,83,78,.10)',
                 overflow: 'hidden',
@@ -468,7 +468,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
               <div style={{
                 position: 'absolute', left: marquee.x, top: marquee.y,
                 width: marquee.w, height: marquee.h,
-                border: '1px solid #f97316', background: 'rgba(249,115,22,.08)',
+                border: '1px solid var(--accent)', background: 'rgba(37,99,235,.10)',
                 zIndex: 98, pointerEvents: 'none',
               }} />
             )}
@@ -478,7 +478,7 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
                 position: 'absolute', inset: 0, display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
                 color: '#c0c4cc', fontSize: 13,
-                border: '2px dashed #e5e7eb', margin: 24, borderRadius: 12,
+                border: '2px dashed var(--line)', margin: 24, borderRadius: 12,
               }}>
                 {t('canvas_hint_drag')}
               </div>
@@ -493,9 +493,9 @@ export function Canvas({ previewing }: { previewing?: boolean }) {
 
 const wrap: React.CSSProperties = { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 };
 const zoomBtn: React.CSSProperties = {
-  border: '1px solid #e5e7eb', background: '#ffffff', borderRadius: 6,
-  padding: '3px 8px', fontSize: 11, color: '#374151', cursor: 'pointer', marginLeft: 4,
+  border: '1px solid var(--line)', background: '#ffffff', borderRadius: 6,
+  padding: '3px 8px', fontSize: 11, color: 'var(--ink-2)', cursor: 'pointer', marginLeft: 4,
 };
 const zoomBtnActive: React.CSSProperties = {
-  background: '#f97316', borderColor: '#f97316', color: '#ffffff',
+  background: 'var(--accent)', borderColor: 'var(--accent)', color: '#ffffff',
 };
