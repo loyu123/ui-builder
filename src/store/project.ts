@@ -43,9 +43,31 @@ export function createEmptyProject(): Project {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
+let pending: Project | undefined;
+
 export function scheduleSave(p: Project) {
+  pending = p;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => void saveProject(p), 1000);
+  saveTimer = setTimeout(() => {
+    const snapshot = pending;
+    pending = undefined;
+    saveTimer = undefined;
+    if (snapshot) void saveProject(snapshot);
+  }, 1000);
+}
+
+/**
+ * F1 · 立即落盘（切换项目 / 删除项目 / 关闭页面前调用）
+ * 防抖窗口内的改动不会丢失；无待写数据时为空操作
+ */
+export async function flushSave(): Promise<void> {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+  }
+  const snapshot = pending;
+  pending = undefined;
+  if (snapshot) await saveProject(snapshot);
 }
 
 /** 定位当前页/当前设备的画板（immer draft 上用） */

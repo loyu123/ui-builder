@@ -11,6 +11,7 @@ export const useStore = create<Store>((set, get) => ({
   project: emptyProject(),
   editor: initialEditor,
   history: { past: [], future: [], lastTag: '', lastAt: 0, log: [] },
+  projects: { list: [], currentId: null, busy: false },   // F1 · 多项目索引快照（hydrate 后填充）
   actions: makeActions(set, get),
 }));
 

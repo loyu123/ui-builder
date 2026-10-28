@@ -19,13 +19,14 @@ npm run build           # production build
 
 > Optional local AI gateway: copy `.env.example` to `.env` and fill in URL + key. `.env` is gitignored; secrets stay local. Without config, AI suggestions fall back to the pure rule engine.
 
-> Demo: open `http://localhost:5173/?demo=login` to load a ready-made login-page design (overwrites the current canvas).
+> Demo: open `http://localhost:5173/?demo=login` to create a **new project** from a ready-made login-page design (existing projects are untouched).
 
 ## Features
 
 | Capability | Description |
 |---|---|
 | Three-column editor | Left: pages + layer tree + module library (30 modules, categories, search); center: device board; right: AI assistant + properties |
+| Multi-project | Header project name ▾ opens the project list: create / switch / rename / delete (most-recent first); pending edits are flushed before switching; index self-heals missing entries; v1.1 single-key data is auto-migrated with a backup |
 | Multi-device design | Desktop 1440×900 / Mobile 390×844 / Watch 200×242; independent per page per device; one-click "copy from" another device |
 | Drag & build | Library drop, free move (local preview state, committed on pointer-up), 8-handle resize, Shift ratio lock, 6px snap guides + board center-line snapping, nested containers, node rotation 0–359° |
 | Editing | Multi-select / marquee / group move, Ctrl+C/V, Delete (keyboard + button), hide, lock, z-order, arrow-key nudge (1px, Shift 8px), undo/redo (graded snapshot stack, 50 steps) |
@@ -54,12 +55,15 @@ src/
 
 ## Tests
 
-**73 tests** (`npm test`):
+**90 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
 - `src/lib/tree.test.ts` — 6 tree tests (deepest container hit / blank / exclude / self-or-descendant / subtreeIds / absOrigin)
 - `src/lib/persist.test.ts` — 4 IndexedDB tests (round-trip / empty / v1→v2 migration / clearAll) via fake-indexeddb
+- `src/lib/persist.projects.test.ts` — 6 multi-project tests (index registration / rename ordering / v1.1 single-key migration + backup / index self-heal / delete / clearAll)
+- `src/lib/projectIndex.test.ts` — 7 pure index tests (garbage tolerance / stale currentId / upsert ordering / remove fallback / prune / legacy upgrade)
+- `src/store/projects.test.ts` — 4 store flow tests (create / switch flushes pending edits / rename syncs index / delete current + last-project guard)
 - `src/lib/i18n.test.ts` — 5 i18n tests (zh/en key parity / fallback / params / lang switch)
 - `src/editor/canvas/gesture.test.ts` — 10 gesture tests (8-handle resize / min clamp / Shift ratio lock / marquee hit + edge-tangent)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)

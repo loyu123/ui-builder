@@ -1,5 +1,6 @@
 // store 切片类型定义（B1 拆分）：状态切片与动作接口集中在此，避免循环依赖
 import type { Board, DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
+import type { ProjectEntry } from '../lib/projectIndex';
 
 export type PagesSnapshot = Page[];
 
@@ -23,6 +24,13 @@ export interface EditorSlice {
   zoom: number;
   pan: { x: number; y: number };
   clipboard: Array<{ rootId: string; subtree: Record<string, Node> }>;
+}
+
+// F1 · 多项目：索引列表（最近使用倒序）+ 当前项目 id + 操作中标记
+export interface ProjectsSlice {
+  list: ProjectEntry[];
+  currentId: string | null;
+  busy: boolean;
 }
 
 export interface Actions {
@@ -64,11 +72,18 @@ export interface Actions {
   reorderNode: (id: string, to: 'front' | 'back' | 'forward' | 'backward') => void;
   importProject: (json: string) => string | null;   // 成功返回 null，失败返回可读原因
   hydrate: () => Promise<void>;
+  // F1 · 多项目管理
+  refreshProjects: () => Promise<void>;
+  createProject: (opts?: { from?: Project }) => Promise<void>;
+  switchProject: (id: string) => Promise<void>;
+  renameProject: (id: string, name: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
 }
 
 export interface Store {
   project: Project;
   editor: EditorSlice;
   history: HistorySlice;
+  projects: ProjectsSlice;
   actions: Actions;
 }

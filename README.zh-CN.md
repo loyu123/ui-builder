@@ -18,7 +18,7 @@ npm run build      # 生产构建
 
 > 本地 AI 网关（可选）：复制 `.env.example` 为 `.env` 并填入地址与密钥。`.env` 已被 gitignore，密钥不入库；未配置时 AI 建议自动回退为纯规则引擎。
 
-> 示例项目：访问 `http://localhost:5173/?demo=login` 可一键灌入完整登录页示例设计（覆盖当前画布）。
+> 示例项目：访问 `http://localhost:5173/?demo=login` 可以示例登录页**新建一个项目**（不会覆盖已有项目；多项目见下方「项目管理」）。
 
 ## 功能总览
 
@@ -32,7 +32,8 @@ npm run build      # 生产构建
 | 主题面板 | 颜色 / 圆角 / 字体令牌可视化编辑，导出为 `tokens.css` 的 CSS 变量 |
 | 预览模式 | 只读画布（编辑手势全禁用）+ 可互动表单（输入框/密码/多行/下拉可真实操作）+ navigate 事件页内真实跳转 + 页面切换条 |
 | AI 建议（规则版） | 5 类规则：对齐/等距栅格/WCAG 对比度/字号层级/文案溢出，建议卡带数字证据，应用走撤销栈 |
-| 数据持久化 | IndexedDB 1s 防抖自动保存；schema 迁移链 + 迁移前自动备份；JSON 导入（含结构深校验）/导出；ErrorBoundary 一键真清空 IndexedDB |
+| 多项目管理 | 顶栏项目名 ▾ 打开项目列表：新建 / 切换 / 重命名 / 删除（最近使用倒序）；切换前自动 flush 落盘；索引自愈（数据缺失条目自动剔除）；v1.1 单 key 数据首次启动自动迁移并留备份 |
+| 数据持久化 | IndexedDB 1s 防抖自动保存（按项目分键）；schema 迁移链 + 迁移前自动备份；JSON 导入（含结构深校验，导入即成为独立项目）/导出；ErrorBoundary 一键真清空 IndexedDB |
 | 导出工程 | 一键 zip：React 19 工程（30 组件 + 多页 hash 路由 + navigate 真实跳页 + tokens.css + events 接口位 + CI + verify.sh），`data/pages.json` 为可再导入的事实源；页面组件名为稳定 ASCII slug |
 
 ## 目录
@@ -40,10 +41,11 @@ npm run build      # 生产构建
 ```
 src/
 ├─ types.ts            # 数据模型（Node/Board/Page/Project）+ 运行时校验（isProject/isValidProject）
-├─ lib/                # coords / tree（容器命中）/ snap（吸附纯函数）/ persist（持久化+迁移+clearAll）/ id / aiClient
-├─ store/              # zustand 切片：index（组合）/ project / editor / history / actions / types / demo（示例项目）
+├─ lib/                # coords / tree（容器命中）/ snap（吸附）/ projectIndex（多项目索引）/ persist / i18n / id / aiClient
+├─ store/              # zustand 切片：index（组合）/ project / editor / history / actions / projects（多项目）/ types / demo
 ├─ modules/            # registry.ts（30 模块唯一元数据源 + 容器单源）+ renderers.tsx（编辑/预览双态）
-├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ErrorBoundary
+├─ editor/             # AppShell / LeftPanel / Canvas / RightPanel / ProjectModal / ErrorBoundary
+│  ├─ canvas/          # NodeView（memo 单节点渲染）/ gesture（缩放+框选纯函数）
 │  └─ right/           # AiPanel / PropsPanel / shared（右栏拆分）
 ├─ ai/engine.ts        # 规则建议引擎
 └─ exporter/           # React 工程 zip 生成器（slug 唯一命名 + 多页路由）
@@ -51,12 +53,15 @@ src/
 
 ## 测试
 
-共 **73 条**（`npm test`）：
+共 **90 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
 - `src/lib/tree.test.ts` — 树工具 6 条（最深容器命中/空白/exclude/防自嵌套/子树集合/绝对原点）
 - `src/lib/persist.test.ts` — IndexedDB 4 条（往返/空库/v1→v2 迁移/clearAll，fake-indexeddb）
+- `src/lib/persist.projects.test.ts` — 多项目持久化 6 条（索引登记与当前项/改名排序/v1.1 单 key 迁移+备份/索引自愈/删除/清空）
+- `src/lib/projectIndex.test.ts` — 多项目索引纯函数 7 条（脏数据容错/失效 currentId/排序去重/删除回退/批量剔除/旧数据升级）
+- `src/store/projects.test.ts` — 多项目 store 流程 4 条（新建入库/切换前 flush 落盘/改名同步索引/删除当前项与最后一项保护）
 - `src/lib/i18n.test.ts` — i18n 5 条（zh/en 键一致/回退链/占位/语言切换）
 - `src/editor/canvas/gesture.test.ts` — 手势纯函数 10 条（八向缩放/最小值钳制/Shift 锁比例/框选命中与边界相切）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）

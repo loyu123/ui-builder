@@ -1,7 +1,7 @@
 // actions 切片（B1 拆分）：全部业务动作（画布/属性/页面/导入导出入口）
 import { produce } from 'immer';
 import { uid } from '../lib/id';
-import { loadProject, migrate } from '../lib/persist';
+import { loadProject, migrate, saveProject } from '../lib/persist';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
 import type { StoreApi } from 'zustand';
@@ -9,6 +9,7 @@ import type { Node } from '../types';
 import { isProject, isValidProject } from '../types';
 import { emptyBoard, emptyProject, pick, scheduleSave } from './project';
 import { makeHistory } from './history';
+import { makeProjects } from './projects';
 import type { Store } from './types';
 
 type Set = StoreApi<Store>['setState'];
@@ -18,6 +19,7 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
   const hist = makeHistory(set, get);
   return {
     ...hist,
+    ...makeProjects(set, get),   // F1 · 多项目管理动作
 
     // CV-02/06 · 拖入画布或容器
     addNode: (type, frame, parentId) => {
@@ -417,13 +419,18 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
           project: migrated,
           editor: { ...get().editor, currentPageId: migrated.pages[0].id, selection: [] },
         });
-        scheduleSave(get().project);
+        // F1 · 导入即作为独立项目写入索引并切为当前项目
+        void (async () => {
+          await saveProject(migrated, { makeCurrent: true });
+          await get().actions.refreshProjects();
+        })();
         return null;
       } catch {
         return '不是合法的 JSON 文本';
       }
     },
 
+    // ST-03 · 启动装载：读索引 → 当前项目（含 v1.1 单项目数据迁移）；无数据则新建并入库
     hydrate: async () => {
       const saved = await loadProject();
       const project = saved ?? emptyProject();
@@ -431,6 +438,8 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
         project,
         editor: { ...s.editor, currentPageId: project.pages[0].id },
       }));
+      if (!saved) await saveProject(project, { makeCurrent: true });
+      await get().actions.refreshProjects();
     },
   };
 }

@@ -11,6 +11,7 @@ import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ProjectModal } from './ProjectModal';
 import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
 export function AppShell() {
@@ -23,6 +24,7 @@ export function AppShell() {
   const [previewing, setPreviewing] = useState(false);
   const [ready, setReady] = useState(false);   // P2-28 · IndexedDB 读取完成前显示骨架，避免闪默认空项目
   const [dragType, setDragType] = useState<string | null>(null);
+  const [showProjects, setShowProjects] = useState(false);   // F1 · 项目管理弹层
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showToast(msg: string) {
@@ -33,10 +35,9 @@ export function AppShell() {
 
   useEffect(() => {
     void hydrate().then(() => {
-      // P2-34 · 示例入口：?demo=login 灌入示例登录页（覆盖当前设计，便于演示/回归）
+      // P2-34 · 示例入口：?demo=login 以示例登录页新建一个项目（F1 起不再覆盖用户已有项目）
       if (new URLSearchParams(window.location.search).get('demo') === 'login') {
-        const project = demoLoginProject();
-        useStore.setState({ project, editor: { ...useStore.getState().editor, currentPageId: project.pages[0].id, selection: [] } });
+        void useStore.getState().actions.createProject({ from: demoLoginProject() });
       }
       setReady(true);
     });
@@ -82,6 +83,7 @@ export function AppShell() {
   // CV-03 · 快捷键（window 级监听，焦点不在编辑器内也生效）
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (showProjects) return;   // 弹层打开时不响应画布快捷键（Esc 由弹层自己处理）
       const st = useStore.getState();
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -119,7 +121,7 @@ export function AppShell() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
     // t 为模块级稳定引用（t 内部实时读当前语言），列入依赖仅为满足 exhaustive-deps
-  }, [previewing, t]);
+  }, [previewing, t, showProjects]);
 
   // P2-28 · 加载骨架（IndexedDB 读取通常 <100ms，仅防闪现）——所有 hooks 之后
   if (!ready) {
@@ -175,6 +177,11 @@ export function AppShell() {
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--panel)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
             />
+            <button
+              className="ub-icon-btn"
+              title={t('open_projects')}
+              onClick={() => setShowProjects(true)}
+            >▾</button>
           </span>
 
           {/* 设备切换（C：居中，选中深色） */}
@@ -226,6 +233,9 @@ export function AppShell() {
             <RightPanel previewing={previewing} />
           </ErrorBoundary>
         </div>
+
+        {/* F1 · 项目管理弹层 */}
+        {showProjects && <ProjectModal onClose={() => setShowProjects(false)} />}
 
         {/* P2-26 · 轻提示 */}
         {toast && (

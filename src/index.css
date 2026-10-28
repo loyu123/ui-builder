@@ -85,3 +85,25 @@ body {
 /* 次要文字 */
 .ub-label { font-size: 11px; color: var(--faint); }
 .ub-label-sm { font-size: 10px; color: var(--faint); }
+
+/* 弹层（F1 · 项目管理） */
+.ub-mask {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(31, 35, 40, .28);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 88px;
+}
+.ub-modal {
+  width: 420px; max-height: 70vh;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); padding: 14px;
+  box-shadow: 0 18px 48px rgba(31, 35, 40, .18);
+}
+.ub-modal-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.ub-modal-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.ub-icon-btn {
+  border: none; background: transparent; color: var(--faint);
+  cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 5px;
+}
+.ub-icon-btn:hover { background: var(--bg-soft); color: var(--ink-2); }

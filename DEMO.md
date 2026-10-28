@@ -1,7 +1,7 @@
 # 5 分钟演示脚本
 
-> 对应版本 v1.1.0。前置：`npm run dev` 已启动（http://localhost:5173）。
-> 快捷开始：直接打开 `http://localhost:5173/?demo=login` 灌入完整登录页示例（会覆盖当前画布）。
+> 对应版本 v1.1.0 → 1.2（多项目）。前置：`npm run dev` 已启动（http://localhost:5173）。
+> 快捷开始：直接打开 `http://localhost:5173/?demo=login`，会以完整登录页示例**新建一个项目**（不影响已有项目）。
 
 ## 1. 拖拽与吸附（1 分钟）
 
