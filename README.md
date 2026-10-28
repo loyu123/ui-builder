@@ -1,6 +1,6 @@
 # UI Builder
 
-> **v1.1.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md)
+> **v1.1.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Handoff notes](./HANDOFF.md)
 
 A visual UI builder: blank canvas + drag-and-drop modules → multi-device layout design → event binding / theme tokens / notes → one-click export of an interactive multi-page React project.
 
@@ -38,7 +38,7 @@ npm run build           # production build
 | Interactive preview | Read-only canvas (editing gestures disabled); inputs / password / textarea / select are real form controls; `navigate` events switch preview pages; page switcher bar |
 | AI suggestions (rules) | 5 rules: alignment / 8px spacing grid / WCAG contrast / type hierarchy / text overflow; cards with numeric evidence; apply uses the undo stack; local/remote mode shown in the panel |
 | Persistence | IndexedDB auto-save (1s debounce); schema migration + pre-migration backup; JSON import with structural deep-validation and readable errors; ErrorBoundary with graded fallbacks + real IndexedDB reset |
-| Project export | One-click zip: React 19 app (components pruned to those used + multi-page hash router + `navigate` real jumps + tokens.css + events stubs + CI + verify.sh); page components get stable ASCII slugs; `data/pages.json` is the re-importable source of truth |
+| Project export | One-click zip: React 19 app (components pruned to those used + multi-page hash router + `navigate` real jumps + tokens.css + events stubs + CI + verify.sh); page components get stable ASCII slugs; `data/pages.json` is the re-importable source of truth; export **scope** lets you pick pages / devices, and `pages.json` narrows accordingly |
 | Board PNG | "Export PNG" in the header saves the current board as a 2× image via a zero-dependency chain (DOM → SVG `foreignObject` → canvas → blob); selection is cleared before capture, file name is `project-page-device-date.png`, and a tainted canvas shows a toast |
 
 ## Layout
@@ -57,7 +57,7 @@ src/
 
 ## Tests
 
-**127 tests** (`npm test`):
+**135 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -72,7 +72,8 @@ src/
 - `src/editor/canvas/gesture.test.ts` — 10 gesture tests (8-handle resize / min clamp / Shift ratio lock / marquee hit + edge-tangent)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 18 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import deep-validation, rotation, events/theme, graded snapshots, boundary cases, perf smoke)
-- `src/exporter/exporter.test.ts` — 8 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router)
+- `src/exporter/exporter.test.ts` — 10 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router / device scope / page scope)
+- `src/exporter/scope.test.ts` — 6 export-scope tests (device fallback + fixed-order dedupe / page filtering keeps order / unknown ids ignored / empty selection falls back / default device / combined scope)
 - `src/exporter/guard.test.ts` — 4 drift-guard tests (template props ⊆ registry fields; event key format; table completeness / no stale keys)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (two pages + navigate, for manual real-build verification)
 - `src/lib/png.test.ts` — 6 board-export tests (default 2× and 1–3 clamp, NaN/Infinity fallback, filename illegal-char replacement and dash collapsing, empty-name `board` fallback, zero-padded date)

@@ -1,6 +1,6 @@
 # 界面搭建器（UI Builder）
 
-> **v1.1.0** · [MIT License](./LICENSE) · [English](./README.md)
+> **v1.1.0** · [MIT License](./LICENSE) · [English](./README.md) · [交接说明 HANDOFF](./HANDOFF.md)
 
 可视化 UI 搭建工具：空白画布 + 拖拽模块 → 多设备界面设计 → 事件绑定 / 主题 / 功能备注 → 一键导出可交互的 React 多页工程。
 
@@ -36,7 +36,7 @@ npm run build      # 生产构建
 | 模板库 | 5 套内置模板（登录页 / 消息列表 / 商品详情 / 个人中心 / 空状态），**每套同时含手机与电脑两套布局**，项目弹层内一键新建；模板由 registry 元数据构建，props 键名漂移由测试拦截 |
 | 图层树 | 左栏当前画板节点树：层级缩进、点击选中（与画布双向同步并自动滚动到可视区）、名称/类型筛选、节点折叠展开、行内一键切换隐藏与锁定 |
 | 数据持久化 | IndexedDB 1s 防抖自动保存（按项目分键）；schema 迁移链 + 迁移前自动备份；JSON 导入（含结构深校验，导入即成为独立项目）/导出；ErrorBoundary 一键真清空 IndexedDB |
-| 导出工程 | 一键 zip：React 19 工程（30 组件 + 多页 hash 路由 + navigate 真实跳页 + tokens.css + events 接口位 + CI + verify.sh），`data/pages.json` 为可再导入的事实源；页面组件名为稳定 ASCII slug |
+| 导出工程 | 一键 zip：React 19 工程（30 组件 + 多页 hash 路由 + navigate 真实跳页 + tokens.css + events 接口位 + CI + verify.sh），`data/pages.json` 为可再导入的事实源；页面组件名为稳定 ASCII slug；导出前可选**范围**（勾选页面 / 设备，未勾选的不进 zip，pages.json 同步收窄） |
 | 画板导图 | 顶栏「导出 PNG」把当前画板存成 2 倍图：零依赖链路（DOM → SVG `foreignObject` → canvas → blob），抓取前先清空选中避免选中框入画，文件名 `项目-页面-设备-日期.png`；跨域图片导致编码失败时 toast 提示 |
 
 ## 目录
@@ -56,7 +56,7 @@ src/
 
 ## 测试
 
-共 **127 条**（`npm test`）：
+共 **135 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
@@ -71,7 +71,8 @@ src/
 - `src/editor/canvas/gesture.test.ts` — 手势纯函数 10 条（八向缩放/最小值钳制/Shift 锁比例/框选命中与边界相切）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）
 - `src/store/store.test.ts` — store 回归 18 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、边界用例、性能冒烟）
-- `src/exporter/exporter.test.ts` — 导出端到端 8 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/隐藏节点一致性/主题变量/TSX 引用/slug 唯一化与多页路由）
+- `src/exporter/exporter.test.ts` — 导出端到端 10 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/隐藏节点一致性/主题变量/TSX 引用/slug 唯一化与多页路由/设备范围/页面范围）
+- `src/exporter/scope.test.ts` — 导出范围 6 条（设备缺省回退与固定顺序去重/页面裁剪保序/未知 id 忽略/空选兜底/默认导出设备/组合）
 - `src/exporter/guard.test.ts` — 漂移守卫 4 条（模板 props ⊆ 注册表；事件 key 拼法；表驱动完整性/无陈旧键）
 - `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（双页 + navigate 场景，供人工解压做真实构建验收）
 - `src/lib/png.test.ts` — 画板导图 6 条（倍率默认 2 与 1~3 钳制、NaN/Infinity 回退、文件名非法字符替换与连字符合并、空名回退 board、月日补零）
