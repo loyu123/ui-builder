@@ -57,7 +57,7 @@ src/
 
 ## 测试
 
-共 **142 条**（`npm test`）：
+共 **160 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
@@ -72,12 +72,15 @@ src/
 - `src/editor/canvas/gesture.test.ts` — 手势纯函数 10 条（八向缩放/最小值钳制/Shift 锁比例/框选命中与边界相切）
 - `src/ai/engine.test.ts` — AI 规则 7 条（5 类规则正反例，含 WCAG 通道解析回归）
 - `src/store/store.test.ts` — store 回归 18 条（30 模块增删、撤销合并、重挂载、复制粘贴、属性、页面、导入深校验、旋转、事件/主题、分级快照、边界用例、性能冒烟）
-- `src/exporter/exporter.test.ts` — 导出端到端 10 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/隐藏节点一致性/主题变量/TSX 引用/slug 唯一化与多页路由/设备范围/页面范围）
+- `src/exporter/exporter.test.ts` — 导出端到端 12 条（zip 规格/组件齐全/未用组件裁剪/pages.json 回读/隐藏节点一致性/主题变量/TSX 引用/slug 唯一化与多页路由/设备范围/页面范围/名称转义/图片协议清洗）
 - `src/exporter/scope.test.ts` — 导出范围 6 条（设备缺省回退与固定顺序去重/页面裁剪保序/未知 id 忽略/空选兜底/默认导出设备/组合）
 - `src/exporter/guard.test.ts` — 漂移守卫 4 条（模板 props ⊆ 注册表；事件 key 拼法；表驱动完整性/无陈旧键）
 - `src/exporter/write-zip.test.ts` — 导出 zip 落盘 1 条（双页 + navigate 场景，供人工解压做真实构建验收）
 - `src/lib/png.test.ts` — 画板导图 6 条（倍率默认 2 与 1~3 钳制、NaN/Infinity 回退、文件名非法字符替换与连字符合并、空名回退 board、月日补零）
 - `src/lib/spacing.test.ts` — 间距标注 7 条（四方向最近间距、重叠区中点定位、另一轴无重叠不标、同方向取最小、重叠/贴边不标、四向同时给出）
+- `src/lib/sanitize.test.ts` — 输入净化 5 条（图片协议白名单与危险协议拒绝、HTML 转义、单行压缩与截断）
+- `src/lib/importGuard.test.ts` — 导入体积护栏 4 条（ASCII 边界、UTF-8 多字节估算、自定义上限）
+- `src/lib/aiSettings.test.ts` — AI 设置 7 条（地址归一化 / 校验 / 默认模型 / 脱敏 / 存储往返 / 坏 JSON 回退）
 
 **导出工程真实构建验收**：已实测通过（zip → 解压 → `npm i` → `tsc + vite build` 绿）。
 
@@ -86,8 +89,22 @@ src/
 - **撤销/重做**：整步快照栈（deep clone pages，上限 50 步），拖动手势 400ms 内合并为一步；拖拽/缩放过程只更新画布本地 state，抬手才写 store。
 - **AI 建议**：规则引擎（5 类，纯本地计算）；远程 AI 网关（Embedding / Reranker）在「设置」里运行时配置，未配置时自动回退，应用建议走通用撤销栈。
 - **旋转**：视觉层 transform；吸附、框选命中、AI 对齐按未旋转外接矩形近似。
-- **错误兜底**：ErrorBoundary 包裹应用；「清空缓存并重置」会真正删除 IndexedDB 主键与迁移备份。
+- **错误兜底**：ErrorBoundary 包裹应用；「清空缓存并重置」会真正删除 IndexedDB 主键、迁移备份**与 AI 设置**。
 - **CI**：pull_request → lint + test + build（ci.yml）；push main → Pages 部署（pages.yml）。
+
+## 安全边界
+
+本项目按「**本机原型工具 + 可选自配网关**」的威胁模型设计，不是多租户在线服务：
+
+| 面 | 现状 |
+|---|---|
+| 密钥 | 只存本浏览器 `localStorage`（`ui-builder:ai-settings`），不入库、不随导出；界面上只以脱敏形式提示。**公共电脑请勿填真实密钥** |
+| 构建参数 | 不使用 `VITE_*` 传密钥——那会被打进公开产物；仓库内不含任何网关地址/密钥（`.env*` 全部忽略） |
+| 清空数据 | 「清空缓存并重置」一并清除 AI 设置，避免误以为已重置 |
+| 导入 | 体积上限 5 MB（前置按字节估算 + 解析前再判一次），超限直接拒绝并给出原因 |
+| 图片/外链 | 协议白名单：`http(s)` / `blob` / `data:image/*` / 相对路径；`javascript:`、`data:text/html` 等一律置空 |
+| 导出产物 | 项目名/页名进 HTML 与 TSX 注释前做转义与单行压缩；props 里的 `src` 同样过协议白名单 |
+| 已知残余风险 | 本地存储未加密（物理访问可读）；浏览器端请求受同源/CORS 与混合内容限制；真正的多用户隔离需要后端代理 |
 
 ## 路线
 

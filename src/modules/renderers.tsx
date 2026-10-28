@@ -1,6 +1,7 @@
 // LB-02~06 · 30 个模块渲染器（纯展示 + 局部交互态）
 // 纪律：交互态（开关/页签/眼睛）用本地 useState，不写 store；store 只存设计
 import { useState } from 'react';
+import { safeImageSrc } from '../lib/sanitize';
 import type { Node } from '../types';
 
 function safeNum(v: unknown, d = 0): number { return typeof v === 'number' ? v : d; }
@@ -26,7 +27,9 @@ export function ModuleRenderer({ node, interactive = false }: { node: Node; inte
     case 'image':
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 12, ...s }}>
-          {p.src ? <img src={String(p.src)} alt={String(p.alt ?? '')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : `🖼 ${String(p.alt ?? '图片')}`}
+          {safeImageSrc(p.src)
+            ? <img src={safeImageSrc(p.src)} alt={String(p.alt ?? '')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : `🖼 ${String(p.alt ?? '图片')}`}
         </div>
       );
     case 'icon':
@@ -35,7 +38,9 @@ export function ModuleRenderer({ node, interactive = false }: { node: Node; inte
       const name = String(p.name ?? '');
       return (
         <div style={{ width: '100%', height: '100%', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...s }}>
-          {p.src ? <img src={String(p.src)} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0) || '?'}
+          {safeImageSrc(p.src)
+            ? <img src={safeImageSrc(p.src)} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : name.charAt(0) || '?'}
         </div>
       );
     }

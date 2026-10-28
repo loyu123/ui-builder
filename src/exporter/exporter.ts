@@ -5,6 +5,7 @@ import { REGISTRY_MAP } from '../modules/registry';
 import type { Board, DeviceId, Node, Page, Project } from '../types';
 import { componentBody } from './templates';
 import { applyExportScope, defaultDevice, type ExportScope } from './scope';
+import { escapeHtml, safeImageSrc, safeInlineText } from '../lib/sanitize';
 
 // P1-15 · 组件模板在 templates.ts；此处 re-export 供 guard 测试使用
 export { componentBody };
@@ -34,6 +35,12 @@ export function collectActions(project: Project): CollectedAction[] {
 }
 
 // ---------- 页面 TSX 生成（嵌套渲染树） ----------
+/** 只清洗 src 这一类"会被浏览器直接解析"的字段；其余 props 原样保留 */
+function sanitizeNodeProps(props: Record<string, unknown>): Record<string, unknown> {
+  if (typeof props.src !== 'string') return props;
+  return { ...props, src: safeImageSrc(props.src) };
+}
+
 function emitNode(node: Node, board: Board, indent: string, used: Set<string>,
   colorVars: Map<string, string>): string {
   const meta = REGISTRY_MAP[node.type];
@@ -49,7 +56,8 @@ function emitNode(node: Node, board: Board, indent: string, used: Set<string>,
     }
   }
   const styleJson = JSON.stringify(themedStyle);
-  const propsJson = JSON.stringify(node.props);
+  // SEC-03 · 导出的 props 里图片地址走协议白名单（挡 javascript: / data:text/html）
+  const propsJson = JSON.stringify(sanitizeNodeProps(node.props));
   const ev = Object.entries(node.events ?? {}).find(([, s]) => s.action !== 'none');
   const onFire = ev ? ` onClick={() => fire("${ev[0]}_${ev[1].action}_${ev[1].target ?? 'none'}")}` : '';
   const childDivs = node.children
@@ -87,7 +95,7 @@ function pageTsx(page: Page, device: DeviceId, slug: string, usedModules: Set<st
   const dev = device.charAt(0).toUpperCase() + device.slice(1);
   return `${imports ? imports + '\n\n' : ''}import { fire } from "../../events/actions";
 
-// ${page.name} · ${device} 画板（由界面搭建器导出；手工修改前请先了解 data/pages.json 可再生成）
+// ${safeInlineText(page.name)} · ${device} 画板（由界面搭建器导出；手工修改前请先了解 data/pages.json 可再生成）
 export default function ${slug}${dev}() {
   return (
     <div style={{ position: "relative", width: ${board.frame.w}, height: ${board.frame.h}, background: "${root.style.background ?? '#ffffff'}", overflow: "hidden" }}>
@@ -126,7 +134,7 @@ export async function exportProjectZip(input: Project, scope: ExportScope = {}):
     }, include: ['src'],
   }, null, 2));
   f('web/vite.config.ts', `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });\n`);
-  f('web/index.html', `<!doctype html>\n<html lang="zh-CN">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${project.name}</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>\n</html>\n`);
+  f('web/index.html', `<!doctype html>\n<html lang="zh-CN">\n<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${escapeHtml(safeInlineText(project.name))}</title></head>\n<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>\n</html>\n`);
 
   // 模块组件按需裁剪（P2-31：zip 只打页面实际引用的组件，未用的不生成）
   // 树形遍历可见节点：hidden 子树不导出（P3-42），其类型也不计入裁剪集合
@@ -291,7 +299,7 @@ createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictM
 
   // 配套文件（EX-04）
   f('README.md',
-`# ${project.name}
+`# ${safeInlineText(project.name)}
 
 由「界面搭建器」导出的 React 工程。设计的事实源是 \`data/pages.json\`（可在编辑器中重新导入继续设计）。
 

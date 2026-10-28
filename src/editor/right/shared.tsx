@@ -3,6 +3,7 @@
 //   fieldInputStyle() → className="ub-field"      cardBtn → className="ub-btn"（可叠加 .ub-btn-sm/.ub-btn-danger/.ub-btn-accent/.ub-btn-ghost）
 //   tabStyle(a) → className="ub-tab" + a && " active"   panel → "ub-panel ub-panel-right"   head → "ub-head"
 import { useStore } from '../../store';
+import { MAX_IMPORT_BYTES } from '../../lib/importGuard';
 import { t } from '../../lib/i18n';
 import type { EventSpec } from '../../types';
 
@@ -31,6 +32,11 @@ export function exportJson() {
 }
 
 export function importJson(file: File) {
+  // SEC-02 · 读文件前先看体积，避免把超大 JSON 整个读进内存
+  if (file.size > MAX_IMPORT_BYTES) {
+    window.alert('导入失败：项目文件过大（上限 5 MB）');
+    return;
+  }
   const reader = new FileReader();
   reader.onload = () => {
     const err = useStore.getState().actions.importProject(String(reader.result));

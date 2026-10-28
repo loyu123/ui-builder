@@ -59,7 +59,7 @@ src/
 
 ## Tests
 
-**142 tests** (`npm test`):
+**160 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -74,12 +74,15 @@ src/
 - `src/editor/canvas/gesture.test.ts` — 10 gesture tests (8-handle resize / min clamp / Shift ratio lock / marquee hit + edge-tangent)
 - `src/ai/engine.test.ts` — 7 rule-engine tests (5 rules, incl. WCAG channel parsing)
 - `src/store/store.test.ts` — 18 regression tests (modules, undo merge, reparent, copy/paste, props, pages, import deep-validation, rotation, events/theme, graded snapshots, boundary cases, perf smoke)
-- `src/exporter/exporter.test.ts` — 10 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router / device scope / page scope)
+- `src/exporter/exporter.test.ts` — 12 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router / device scope / page scope / name escaping / image protocol scrubbing)
 - `src/exporter/scope.test.ts` — 6 export-scope tests (device fallback + fixed-order dedupe / page filtering keeps order / unknown ids ignored / empty selection falls back / default device / combined scope)
 - `src/exporter/guard.test.ts` — 4 drift-guard tests (template props ⊆ registry fields; event key format; table completeness / no stale keys)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (two pages + navigate, for manual real-build verification)
 - `src/lib/png.test.ts` — 6 board-export tests (default 2× and 1–3 clamp, NaN/Infinity fallback, filename illegal-char replacement and dash collapsing, empty-name `board` fallback, zero-padded date)
 - `src/lib/spacing.test.ts` — 7 spacing-mark tests (nearest gap per side, overlap-center placement, no cross-axis overlap, smallest of several candidates, overlap/adjacent skipped, all four sides)
+- `src/lib/sanitize.test.ts` — 5 input-sanitising tests (image protocol allowlist + dangerous schemes rejected, HTML escaping, single-line flattening/truncation)
+- `src/lib/importGuard.test.ts` — 4 import-size guard tests (ASCII boundary, UTF-8 byte estimate, custom cap)
+- `src/lib/aiSettings.test.ts` — 7 AI-settings tests (URL normalisation / validation / default models / masking / storage round-trip / corrupt JSON fallback)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).
 
@@ -101,9 +104,23 @@ PR CI (`ci.yml`) runs lint + test + build on pull requests; `main` pushes deploy
 
 - **Undo/redo:** graded snapshot stack — page-level operations (add/delete page) snapshot all pages; everything else snapshots only the current board. Drag gestures within 400ms merge into one step; drag/resize preview lives in local state and commits once on pointer-up.
 - **AI:** v1 is a local rule engine (5 rules). A remote AI gateway (embed/rerank) is configured at runtime in Settings; without it, rules-only. Applied suggestions go through the shared undo stack.
-- **Error handling:** graded `ErrorBoundary` — app-level full-page fallback with refresh / real IndexedDB reset; compact boundaries around canvas and right panel so one panel crashing never takes down the editor.
+- **Error handling:** graded `ErrorBoundary` — app-level full-page fallback with refresh / real IndexedDB reset (which also wipes AI settings); compact boundaries around canvas and right panel so one panel crashing never takes down the editor.
 - **Export stack:** generated `web/` uses React 19 aligned with the editor; the contrast rule uses WCAG luminance with per-channel hex parsing. Multi-page designs export with a hash router; `navigate` events targeting a project page emit real `location.hash` jumps, other actions stay as stubs.
 - **Rotation & snapping:** node rotation (`0–359°`) is a visual transform; snapping, marquee hit-testing and AI alignment rules still work on the **unrotated axis-aligned bounding box**, so a rotated module may snap by its outer frame. Preview mode is read-only for editing gestures but interactive for forms and `navigate` jumps.
+
+## Security model
+
+Threat model is a **local prototyping tool with an optional self-hosted gateway**, not a multi-tenant service:
+
+| Surface | Current behaviour |
+|---|---|
+| Secrets | AI key lives only in this browser's `localStorage` (`ui-builder:ai-settings`); never in the repo, never in exports; UI shows it masked. Don't type a production key on a shared machine |
+| Build-time config | No `VITE_*` secrets (those end up in public bundles); `.env*` stays gitignored |
+| Data reset | "Clear cache and reset" also clears AI settings |
+| Import | 5 MB cap (byte estimate before parse + re-check before JSON.parse), rejected with a readable reason |
+| Images / links | Protocol allowlist: `http(s)`, `blob`, `data:image/*`, relative paths; `javascript:` / `data:text/html` are blanked |
+| Exports | Project/page names escaped and flattened before entering HTML or TSX comments; `src` props pass the same allowlist |
+| Residual risk | Local storage is unencrypted; browser-side requests hit CORS / mixed-content limits; real multi-user isolation needs a backend proxy |
 
 ## Roadmap
 

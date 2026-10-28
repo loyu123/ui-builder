@@ -2,6 +2,7 @@
 // F1 · 多项目：索引键 `ui-builder:index` + 每项目数据键 `ui-builder:project:<id>`；
 //      v1.1 的单 key 数据（`ui-builder:current-project`）在首次读取时自动迁移并保留备份。
 import { get, set, del } from 'idb-keyval';
+import { clearAiSettings } from './aiSettings';
 import type { Page, Project } from '../types';
 import {
   emptyIndex, entryOf, indexFromLegacy, parseIndex, pruneIds, removeEntry, upsertEntry,
@@ -166,6 +167,7 @@ export async function clearAll(): Promise<void> {
   }
   try {
     localStorage.removeItem('ub-last-export');
+    clearAiSettings();          // SEC-01 · 「清空并重置」连 AI 密钥一起抹掉，别让用户以为已经清干净
   } catch {
     /* 无 localStorage 环境忽略 */
   }

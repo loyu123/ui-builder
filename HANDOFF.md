@@ -6,7 +6,7 @@
 ## 1. 现在是什么状态
 
 - 版本线：v1.1.0 已发布；v1.2.0 功能全部落地（多项目 / 模板 / 对齐 / 图层树 / 画板导图 / 导出范围 / 间距标注），版本号与 CHANGELOG 已更新，剩 Pages 部署线上回归。
-- 质量门：**142 条单测全绿**、`oxlint` 0 warning、`tsc --noEmit` 干净、`vite build` 绿。CI（lint + test + build）为合并前提。
+- 质量门：**160 条单测全绿**、`oxlint` 0 warning、`tsc --noEmit` 干净、`vite build` 绿。CI（lint + test + build）为合并前提。
 - 纯前端单机应用：无后端、无账号、数据全在浏览器 IndexedDB。
 
 ## 2. 怎么跑起来
@@ -17,7 +17,7 @@
 cd /home/dev/ui-builder
 npm install          # 首次
 npm run dev          # http://localhost:5173
-npm test             # vitest run（142 条）
+npm test             # vitest run（160 条）
 npm run lint         # oxlint
 npm run build        # tsc -b && vite build
 ```
@@ -123,3 +123,17 @@ src/
 - 新增 UI 文案必须 zh/en 同步；新增纯函数优先补单测（本项目测试成本低、收益高）。
 - 编辑器 chrome 的图标统一走 `src/editor/icons.tsx` 的线性 SVG（24 格视框 / 1.7px 描边 / `currentColor`），不要再引入彩色 emoji；画布内的模块占位内容（🖼 🔔 📶 🔋 等）属于设计稿素材，保持原样。
 - PowerShell → WSL 传参时括号/管道易被吞：复杂命令用 `wsl -d UIBuilder -- bash -lc "..."`，或把脚本写到 `/mnt/c` 下再执行。
+
+## 10. 安全加固状态（对应 `ui-builder-安全评估报告.md`）
+
+威胁模型：本地原型工具 + 可选自配网关，**不是**多租户服务。
+
+| 编号 | 项 | 状态 |
+|---|---|---|
+| SEC-01 | 密钥生命周期（localStorage-only / 脱敏展示 / 重置时一并清除） | ✅ `clearAll()` 调 `clearAiSettings()`；面板只显示 `sk-••••cd` |
+| SEC-02 | 导入体积上限（5 MB，双重判定） | ✅ `lib/importGuard.ts` + `File.size` 前置 + `importProject` 解析前 |
+| SEC-03 | 图片协议白名单 + 导出字符串转义 | ✅ `lib/sanitize.ts`（渲染层与导出器共用；页名/项目名压成单行安全文本） |
+| SEC-04 | 密钥加密存储 | ⏸ 不做：本地单用户工具，加密密钥无处安放（无后端），收益低 |
+| SEC-05 | 同源后端代理（key 只留服务端） | ⏸ 未做：需要后端，超出 v1.2「纯前端单机」范围 |
+
+残余风险（已知可控）：本地存储明文、CORS/混合内容限制、共享电脑滥用。**不要把生产密钥填进公共电脑。**

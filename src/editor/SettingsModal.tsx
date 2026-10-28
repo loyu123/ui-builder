@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { useT } from '../lib/i18n';
-import { DEFAULT_AI_SETTINGS, isValidBaseUrl, normalizeAiSettings, normalizeBaseUrl } from '../lib/aiSettings';
+import { DEFAULT_AI_SETTINGS, isValidBaseUrl, maskApiKey, normalizeAiSettings, normalizeBaseUrl } from '../lib/aiSettings';
 import { testAiConnection } from '../lib/aiClient';
 import { IconEye, IconEyeOff } from './icons';
 
@@ -114,6 +114,12 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
               {showKey ? <IconEyeOff size={13} /> : <IconEye size={13} />}
             </button>
           </span>
+          {/* SEC-01 · 已保存的密钥只以脱敏形式提示，避免整段明文常驻界面 */}
+          {ai.apiKey && !showKey && (
+            <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>
+              {t('settings_saved_key', { key: maskApiKey(ai.apiKey) })}
+            </span>
+          )}
         </label>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>

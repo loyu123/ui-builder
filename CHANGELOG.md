@@ -13,6 +13,13 @@
 - 移除 `.env.example` 与全部 `VITE_AI_*` 环境变量读取（仓库不再保存任何网关地址 / 密钥）；`.gitignore` 同步去掉 `.env.example` 例外。AI 网关改为运行时设置。
 - 文档（README 中英 / HANDOFF）改为描述运行时设置，不再要求复制 `.env`。
 
+### 安全
+
+- **SEC-01**：「清空缓存并重置」现在同时清除 AI 网关设置（此前只删 IndexedDB，`localStorage` 里的密钥会残留）；设置弹层里已保存的密钥只显示脱敏值。
+- **SEC-02**：项目 JSON 导入加 5 MB 体积上限（读文件前按 `File.size`、解析前再按 UTF-8 估算各判一次），超限直接拒绝并说明原因。
+- **SEC-03**：图片地址走协议白名单（`http(s)` / `blob` / `data:image/*` / 相对路径），编辑器渲染与导出产物同步清洗；导出时项目名/页名经 HTML 转义与单行压缩，防止破坏 `index.html` 与 TSX 注释。
+- 新增 `src/lib/sanitize.ts`、`src/lib/importGuard.ts` 及 9 条单测；README 增加「安全边界」章节。
+
 ### 优化
 
 - 编辑器 chrome 里的彩色 emoji 图标统一换成为 **线性 SVG 图标**（`src/editor/icons.tsx`）：顶栏设备切换（显示器 / 手机 / 手表）、右栏「主题」「快捷键」折叠块、图层树锁定状态。

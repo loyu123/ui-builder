@@ -162,4 +162,40 @@ describe('EX · 导出工程端到端', () => {
       .filter(Boolean);
     expect([...new Set(pageDirs)]).toEqual(['Page2']);
   });
+
+  it('SEC-03：项目名 / 页名里的 HTML 与模板元字符被转义，不会破坏产物', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const project = JSON.parse(JSON.stringify(useStore.getState().project));
+    project.name = '</title><script>alert(1)</script>';
+    project.pages[0].name = '登录`页${x}\n第二行';
+    const bytes = await exportProjectZip(project);
+    const zip = await JSZip.loadAsync(bytes);
+
+    const html = await zip.file('ui-builder-export/web/index.html')!.async('string');
+    expect(html).toContain('&lt;/title&gt;&lt;script&gt;');
+    expect(html).not.toContain('<script>alert(1)</script>');
+
+    // 页名进了 TSX 注释：换行/反引号/美元符都被压成安全单行，产物仍是合法字符串
+    // （slug 由 ASCII 派生，故此处按文件名模式取，不假设一定是 Page/）
+    const mobileKey = Object.keys(zip.files).find(n => /^ui-builder-export\/web\/src\/pages\/[^/]+\/Mobile\.tsx$/.test(n))!;
+    const tsx = await zip.file(mobileKey)!.async('string');
+    expect(tsx).toContain('// 登录页{x} 第二行 · mobile 画板');
+    expect(tsx).not.toContain('${x}');
+  });
+
+  it('SEC-03：图片 props 的危险协议在导出时被清空', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const a = useStore.getState().actions;
+    a.addNode('image', { x: 10, y: 10, w: 120, h: 80 });
+    const board = useStore.getState().project.pages[0].boards.mobile;
+    const imgId = Object.keys(board.nodes).find(id => board.nodes[id].type === 'image')!;
+    a.setProp(imgId, 'src', 'javascript:alert(1)');
+    const bytes = await exportProjectZip(useStore.getState().project);
+    const zip = await JSZip.loadAsync(bytes);
+    const json = JSON.parse(await zip.file('ui-builder-export/data/pages.json')!.async('string'));
+    // pages.json 保留原始设计（事实源），但生成组件用的 props 已被清洗
+    const tsx = await zip.file('ui-builder-export/web/src/pages/Page/Mobile.tsx')!.async('string');
+    expect(tsx).not.toContain('javascript:alert(1)');
+    expect(json.pages[0].boards.mobile.nodes[imgId].props.src).toBe('javascript:alert(1)');
+  });
 });

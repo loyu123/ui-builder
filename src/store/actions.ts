@@ -3,6 +3,7 @@ import { produce } from 'immer';
 import { uid } from '../lib/id';
 import { loadProject, migrate, saveProject } from '../lib/persist';
 import { clearAiSettings, saveAiSettings, type AiSettings } from '../lib/aiSettings';
+import { isOversizedImport } from '../lib/importGuard';
 import { alignFrames, distributeFrames } from '../lib/align';
 import { subtreeIds } from '../lib/tree';
 import { REGISTRY_MAP } from '../modules/registry';
@@ -429,6 +430,8 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
 
     // ST-05 · 导入 JSON（含校验与迁移；失败返回可读原因，成功返回 null）
     importProject: json => {
+      // SEC-02 · 体积护栏：超大文件先拒，不进入 JSON.parse（避免卡死标签页）
+      if (isOversizedImport(json)) return '项目文件过大（上限 5 MB）';
       try {
         const raw = JSON.parse(json);
         if (!isProject(raw)) return '文件缺少必要字段（pages / theme / schemaVersion）';
