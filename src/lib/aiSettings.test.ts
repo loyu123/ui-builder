@@ -5,20 +5,32 @@ import {
   normalizeAiSettings, isAiConfigured, maskApiKey, loadAiSettings, saveAiSettings, clearAiSettings,
 } from './aiSettings';
 
-/** 极简内存 Storage 替身（node 环境没有 localStorage） */
-function stubStorage() {
+/** 极简内存 Storage 替身（node 环境没有 localStorage / sessionStorage） */
+function memStorage() {
   const map = new Map<string, string>();
-  const st = {
-    getItem: (k: string) => map.get(k) ?? null,
-    setItem: (k: string, v: string) => { map.set(k, v); },
-    removeItem: (k: string) => { map.delete(k); },
+  return {
+    map,
+    st: {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => { map.set(k, v); },
+      removeItem: (k: string) => { map.delete(k); },
+    },
   };
-  (globalThis as { localStorage?: unknown }).localStorage = st;
-  return map;
+}
+
+function stubStorages() {
+  const local = memStorage();
+  const session = memStorage();
+  const g = globalThis as { localStorage?: unknown; sessionStorage?: unknown };
+  g.localStorage = local.st;
+  g.sessionStorage = session.st;
+  return { local: local.map, session: session.map };
 }
 
 afterEach(() => {
-  delete (globalThis as { localStorage?: unknown }).localStorage;
+  const g = globalThis as { localStorage?: unknown; sessionStorage?: unknown };
+  delete g.localStorage;
+  delete g.sessionStorage;
 });
 
 describe('AI 设置', () => {
@@ -44,6 +56,7 @@ describe('AI 设置', () => {
     expect(s).toEqual({
       baseUrl: 'https://gw.example.com', apiKey: 'sk-abc',
       embedModel: DEFAULT_AI_SETTINGS.embedModel, rerankModel: DEFAULT_AI_SETTINGS.rerankModel,
+      remember: true,           // 缺省勾选「记住密钥」
     });
     expect(normalizeAiSettings({ embedModel: '  ', rerankModel: 'my-rerank' }).rerankModel).toBe('my-rerank');
     expect(normalizeAiSettings(null)).toEqual(DEFAULT_AI_SETTINGS);
@@ -64,21 +77,43 @@ describe('AI 设置', () => {
   });
 
   it('存储往返：保存后读回一致，清除后回到默认', () => {
-    const map = stubStorage();
+    const { local } = stubStorages();
     expect(loadAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
 
     saveAiSettings({ baseUrl: 'https://gw.example.com/', apiKey: 'sk-x', embedModel: 'e1', rerankModel: 'r1' });
-    expect(map.has(AI_SETTINGS_STORAGE_KEY)).toBe(true);
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(true);
     expect(loadAiSettings()).toMatchObject({ baseUrl: 'https://gw.example.com', apiKey: 'sk-x', embedModel: 'e1', rerankModel: 'r1' });
 
     clearAiSettings();
-    expect(map.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);
     expect(loadAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
   });
 
-  it('存储里是坏 JSON 时回退默认，不抛错', () => {
-    const map = stubStorage();
-    map.set(AI_SETTINGS_STORAGE_KEY, '{not json');
+  it('SEC-04 · remember=false 只写会话存储，并清掉长久副本', () => {
+    const { local, session } = stubStorages();
+    saveAiSettings({ baseUrl: 'https://gw.example.com', apiKey: 'sk-long' });   // 先勾选记住
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(true);
+
+    saveAiSettings({ baseUrl: 'https://gw.example.com', apiKey: 'sk-session', remember: false });
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);        // 旧的长久副本被清
+    expect(session.has(AI_SETTINGS_STORAGE_KEY)).toBe(true);
+    expect(loadAiSettings()).toMatchObject({ apiKey: 'sk-session', remember: false });
+
+    // 再勾回记住：写回长久存储并清掉会话副本
+    saveAiSettings({ ...loadAiSettings(), remember: true });
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(true);
+    expect(session.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);
+  });
+
+  it('clear 同时清掉两处副本；坏 JSON 回退默认且不抛错', () => {
+    const { local, session } = stubStorages();
+    local.set(AI_SETTINGS_STORAGE_KEY, '{not json');
+    session.set(AI_SETTINGS_STORAGE_KEY, 'also-broken');
     expect(loadAiSettings()).toEqual(DEFAULT_AI_SETTINGS);
+
+    saveAiSettings({ baseUrl: 'https://gw.example.com', apiKey: 'sk-x', remember: false });
+    clearAiSettings();
+    expect(local.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);
+    expect(session.has(AI_SETTINGS_STORAGE_KEY)).toBe(false);
   });
 });

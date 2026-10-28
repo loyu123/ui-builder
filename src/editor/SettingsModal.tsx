@@ -21,6 +21,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
   const [apiKey, setApiKey] = useState(ai.apiKey);
   const [embedModel, setEmbedModel] = useState(ai.embedModel);
   const [rerankModel, setRerankModel] = useState(ai.rerankModel);
+  const [remember, setRemember] = useState(ai.remember);
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -37,7 +38,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
   const canSave = !urlBad;
 
   function draft() {
-    return normalizeAiSettings({ baseUrl, apiKey, embedModel, rerankModel });
+    return normalizeAiSettings({ baseUrl, apiKey, embedModel, rerankModel, remember });
   }
 
   function save() {
@@ -53,6 +54,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
     setApiKey(DEFAULT_AI_SETTINGS.apiKey);
     setEmbedModel(DEFAULT_AI_SETTINGS.embedModel);
     setRerankModel(DEFAULT_AI_SETTINGS.rerankModel);
+    setRemember(DEFAULT_AI_SETTINGS.remember);
     setMsg(null);
     onCleared?.();
   }
@@ -118,6 +120,8 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
           {ai.apiKey && !showKey && (
             <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>
               {t('settings_saved_key', { key: maskApiKey(ai.apiKey) })}
+              {' · '}
+              {ai.remember ? t('settings_storage_persist') : t('settings_storage_session')}
             </span>
           )}
         </label>
@@ -134,6 +138,13 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
               onChange={e => setRerankModel(e.target.value)} />
           </label>
         </div>
+
+        {/* SEC-04 · 默认记住；不勾选则只存到本次会话（关页即失效） */}
+        <label className="ub-row" style={{ gap: 6, padding: '2px 0', cursor: 'pointer', fontSize: 11 }}>
+          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
+          <span className="ub-row-label">{t('settings_remember')}</span>
+        </label>
+        <div className="ub-label-sm" style={{ color: 'var(--faint-2)' }}>{t('settings_remember_hint')}</div>
 
         <div className="ub-label-sm">{t('settings_hint')}</div>
         <div className="ub-label-sm" style={{ color: 'var(--faint-2)' }}>{t('settings_mixed_hint')}</div>

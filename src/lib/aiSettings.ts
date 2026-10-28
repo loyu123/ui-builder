@@ -1,10 +1,12 @@
 // AI 网关设置（Embedding / Reranker）：运行时在「设置」里配置
-// 只写本浏览器 localStorage —— 不入库、不参与导出、不上报；留空即回退纯规则引擎
+// 只写本浏览器存储：remember=true 走 localStorage（跨会话），false 走 sessionStorage（关页即失效）
+// 不入库、不参与导出、不上报；留空即回退纯规则引擎
 export interface AiSettings {
   baseUrl: string;     // 形如 https://gateway.example.com（不含 /v1）
   apiKey: string;
   embedModel: string;
   rerankModel: string;
+  remember: boolean;   // SEC-04 · 是否记住密钥（false = 只保留到本次会话结束）
 }
 
 export const AI_SETTINGS_STORAGE_KEY = 'ui-builder:ai-settings';
@@ -14,6 +16,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   apiKey: '',
   embedModel: 'text-embedding-3-small',
   rerankModel: 'rerank-v3',
+  remember: true,
 };
 
 /** 去空白、去尾部斜杠、去掉误填的 /v1（接口路径自己会拼 /v1/embeddings） */
@@ -44,6 +47,7 @@ export function normalizeAiSettings(input?: Partial<AiSettings> | null): AiSetti
     apiKey: (src.apiKey ?? '').trim(),
     embedModel: (src.embedModel ?? '').trim() || DEFAULT_AI_SETTINGS.embedModel,
     rerankModel: (src.rerankModel ?? '').trim() || DEFAULT_AI_SETTINGS.rerankModel,
+    remember: src.remember !== false,
   };
 }
 
@@ -60,39 +64,57 @@ export function maskApiKey(key: string): string {
   return `${k.slice(0, 3)}••••${k.slice(-2)}`;
 }
 
-function safeStorage(): Storage | null {
+function safeStorage(kind: 'local' | 'session'): Storage | null {
   try {
-    return typeof localStorage === 'undefined' ? null : localStorage;
+    const s = kind === 'local' ? localStorage : sessionStorage;
+    return s ?? null;
   } catch {
     return null;   // 隐私模式 / 被禁用
   }
 }
 
-export function loadAiSettings(): AiSettings {
-  const store = safeStorage();
-  if (!store) return normalizeAiSettings(null);
+function readFrom(store: Storage | null): AiSettings | null {
+  if (!store) return null;
   try {
     const raw = store.getItem(AI_SETTINGS_STORAGE_KEY);
-    if (!raw) return normalizeAiSettings(null);
+    if (!raw) return null;
     return normalizeAiSettings(JSON.parse(raw) as Partial<AiSettings>);
   } catch {
-    return normalizeAiSettings(null);
+    return null;
   }
 }
 
+function writeTo(store: Storage | null, value: AiSettings | null): void {
+  if (!store) return;
+  try {
+    if (value) store.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(value));
+    else store.removeItem(AI_SETTINGS_STORAGE_KEY);
+  } catch {
+    /* 配额 / 被禁用时静默 */
+  }
+}
+
+/** 会话副本优先（remember=false 刚保存过），其次跨会话副本，最后默认值 */
+export function loadAiSettings(): AiSettings {
+  return readFrom(safeStorage('session')) ?? readFrom(safeStorage('local')) ?? normalizeAiSettings(null);
+}
+
+/** 按 remember 分流存储：勾选 → localStorage；不勾选 → sessionStorage（并清掉长期副本） */
 export function saveAiSettings(input: Partial<AiSettings>): AiSettings {
   const next = normalizeAiSettings(input);
-  const store = safeStorage();
-  if (store) {
-    try { store.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(next)); } catch { /* 配额/禁用时静默 */ }
+  if (next.remember) {
+    writeTo(safeStorage('local'), next);
+    writeTo(safeStorage('session'), null);
+  } else {
+    writeTo(safeStorage('session'), next);
+    writeTo(safeStorage('local'), null);   // 取消勾选后旧的长久副本不能留
   }
   return next;
 }
 
+/** 清除两处副本（「清除」按钮与「清空缓存并重置」都走这里） */
 export function clearAiSettings(): AiSettings {
-  const store = safeStorage();
-  if (store) {
-    try { store.removeItem(AI_SETTINGS_STORAGE_KEY); } catch { /* 同上 */ }
-  }
+  writeTo(safeStorage('local'), null);
+  writeTo(safeStorage('session'), null);
   return normalizeAiSettings(null);
 }

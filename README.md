@@ -59,7 +59,7 @@ src/
 
 ## Tests
 
-**160 tests** (`npm test`):
+**161 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -82,7 +82,7 @@ src/
 - `src/lib/spacing.test.ts` — 7 spacing-mark tests (nearest gap per side, overlap-center placement, no cross-axis overlap, smallest of several candidates, overlap/adjacent skipped, all four sides)
 - `src/lib/sanitize.test.ts` — 5 input-sanitising tests (image protocol allowlist + dangerous schemes rejected, HTML escaping, single-line flattening/truncation)
 - `src/lib/importGuard.test.ts` — 4 import-size guard tests (ASCII boundary, UTF-8 byte estimate, custom cap)
-- `src/lib/aiSettings.test.ts` — 7 AI-settings tests (URL normalisation / validation / default models / masking / storage round-trip / corrupt JSON fallback)
+- `src/lib/aiSettings.test.ts` — 8 AI-settings tests (URL normalisation / validation / default models / masking / storage round-trip / remember-flag dual storage / corrupt JSON fallback)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).
 
@@ -114,7 +114,8 @@ Threat model is a **local prototyping tool with an optional self-hosted gateway*
 
 | Surface | Current behaviour |
 |---|---|
-| Secrets | AI key lives only in this browser's `localStorage` (`ui-builder:ai-settings`); never in the repo, never in exports; UI shows it masked. Don't type a production key on a shared machine |
+| Secrets | AI key lives only in this browser: `localStorage` by default (`ui-builder:ai-settings`, across sessions), or `sessionStorage` when "remember key" is unchecked (gone when the tab closes). Never in the repo, never in exports; UI shows it masked. Don't type a production key on a shared machine |
+| CSP | Production builds inject a `Content-Security-Policy` from `vite.config.ts` (`script-src 'self'`, `object-src 'none'`, `base-uri 'self'`; `style-src` needs `'unsafe-inline'` for React inline styles). Dev builds skip it so HMR keeps working |
 | Build-time config | No `VITE_*` secrets (those end up in public bundles); `.env*` stays gitignored |
 | Data reset | "Clear cache and reset" also clears AI settings |
 | Import | 5 MB cap (byte estimate before parse + re-check before JSON.parse), rejected with a readable reason |

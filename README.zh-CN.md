@@ -57,7 +57,7 @@ src/
 
 ## 测试
 
-共 **160 条**（`npm test`）：
+共 **161 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
@@ -80,7 +80,7 @@ src/
 - `src/lib/spacing.test.ts` — 间距标注 7 条（四方向最近间距、重叠区中点定位、另一轴无重叠不标、同方向取最小、重叠/贴边不标、四向同时给出）
 - `src/lib/sanitize.test.ts` — 输入净化 5 条（图片协议白名单与危险协议拒绝、HTML 转义、单行压缩与截断）
 - `src/lib/importGuard.test.ts` — 导入体积护栏 4 条（ASCII 边界、UTF-8 多字节估算、自定义上限）
-- `src/lib/aiSettings.test.ts` — AI 设置 7 条（地址归一化 / 校验 / 默认模型 / 脱敏 / 存储往返 / 坏 JSON 回退）
+- `src/lib/aiSettings.test.ts` — AI 设置 8 条（地址归一化 / 校验 / 默认模型 / 脱敏 / 存储往返 / 记住开关双存储 / 坏 JSON 回退）
 
 **导出工程真实构建验收**：已实测通过（zip → 解压 → `npm i` → `tsc + vite build` 绿）。
 
@@ -98,7 +98,8 @@ src/
 
 | 面 | 现状 |
 |---|---|
-| 密钥 | 只存本浏览器 `localStorage`（`ui-builder:ai-settings`），不入库、不随导出；界面上只以脱敏形式提示。**公共电脑请勿填真实密钥** |
+| 密钥 | 只存本浏览器：默认 `localStorage`（`ui-builder:ai-settings`，跨会话）；取消「记住密钥」则改存 `sessionStorage`，关页即失效。不入库、不随导出；界面只显示脱敏值。**公共电脑请勿填真实密钥** |
+| CSP | 生产构建由 `vite.config.ts` 注入 `Content-Security-Policy`（`script-src 'self'`、`object-src 'none'`、`base-uri 'self'`，`style-src` 需 `'unsafe-inline'` 以兼容 React 内联样式）；开发环境不注入，避免打断 HMR |
 | 构建参数 | 不使用 `VITE_*` 传密钥——那会被打进公开产物；仓库内不含任何网关地址/密钥（`.env*` 全部忽略） |
 | 清空数据 | 「清空缓存并重置」一并清除 AI 设置，避免误以为已重置 |
 | 导入 | 体积上限 5 MB（前置按字节估算 + 解析前再判一次），超限直接拒绝并给出原因 |

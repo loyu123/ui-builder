@@ -19,6 +19,8 @@
 - **SEC-02**：项目 JSON 导入加 5 MB 体积上限（读文件前按 `File.size`、解析前再按 UTF-8 估算各判一次），超限直接拒绝并说明原因。
 - **SEC-03**：图片地址走协议白名单（`http(s)` / `blob` / `data:image/*` / 相对路径），编辑器渲染与导出产物同步清洗；导出时项目名/页名经 HTML 转义与单行压缩，防止破坏 `index.html` 与 TSX 注释。
 - 新增 `src/lib/sanitize.ts`、`src/lib/importGuard.ts` 及 9 条单测；README 增加「安全边界」章节。
+- **SEC-04**：设置里新增「记住密钥」开关——勾选走 `localStorage`（跨会话），不勾选只写 `sessionStorage`（关页即失效），切换时清掉另一侧副本；密钥旁标注当前存储口径。
+- **SEC-05**：生产构建注入 `Content-Security-Policy`（`script-src 'self'` / `object-src 'none'` / `base-uri 'self'`，`style-src` 保留 `'unsafe-inline'` 以兼容 React 内联样式；`img-src`/`connect-src` 放开 http(s) 以支持外链图与自定义网关）。开发环境不注入，避免打断 HMR。
 
 ### 优化
 
