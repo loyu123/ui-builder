@@ -151,6 +151,24 @@ export function AppShell() {
     URL.revokeObjectURL(a.href);
   }
 
+  // F3 · 当前画板导出 PNG（先清空选中，避免选中框进成品；等两帧让 DOM 更新完）
+  async function exportPng() {
+    const st = useStore.getState();
+    st.actions.select([]);
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    const el = document.querySelector('[data-board]') as HTMLElement | null;
+    if (!el) return;
+    try {
+      const { exportBoardPng, boardPngFileName, downloadBlob } = await import('../lib/png');
+      const blob = await exportBoardPng(el, { scale: 2 });
+      const page = st.project.pages.find(p => p.id === st.editor.currentPageId) ?? st.project.pages[0];
+      downloadBlob(blob, boardPngFileName(st.project.name, page.name, st.editor.currentDevice));
+    } catch (err) {
+      console.error('[png] 导出失败', err);
+      showToast(t('png_failed'));
+    }
+  }
+
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -203,9 +221,17 @@ export function AppShell() {
 
           <span style={{ flex: 1 }} />
 
-          {/* 预览 / 导出工程 / 语言切换 / 方向标签 */}
+          {/* 预览 / 导出 PNG / 导出工程 / 语言切换 / 方向标签 */}
           <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
             {previewing ? t('exit_preview') : t('preview')}
+          </button>
+          <button
+            onClick={exportPng}
+            title={t('export_png_hint')}
+            className="ub-btn ub-btn-pad"
+            style={{ flex: 'none' }}
+          >
+            {t('export_png')}
           </button>
           <button onClick={exportZip} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
             {t('export_zip')}

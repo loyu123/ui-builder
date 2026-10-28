@@ -39,6 +39,7 @@ npm run build           # production build
 | AI suggestions (rules) | 5 rules: alignment / 8px spacing grid / WCAG contrast / type hierarchy / text overflow; cards with numeric evidence; apply uses the undo stack; local/remote mode shown in the panel |
 | Persistence | IndexedDB auto-save (1s debounce); schema migration + pre-migration backup; JSON import with structural deep-validation and readable errors; ErrorBoundary with graded fallbacks + real IndexedDB reset |
 | Project export | One-click zip: React 19 app (components pruned to those used + multi-page hash router + `navigate` real jumps + tokens.css + events stubs + CI + verify.sh); page components get stable ASCII slugs; `data/pages.json` is the re-importable source of truth |
+| Board PNG | "Export PNG" in the header saves the current board as a 2× image via a zero-dependency chain (DOM → SVG `foreignObject` → canvas → blob); selection is cleared before capture, file name is `project-page-device-date.png`, and a tainted canvas shows a toast |
 
 ## Layout
 
@@ -56,7 +57,7 @@ src/
 
 ## Tests
 
-**121 tests** (`npm test`):
+**127 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -74,6 +75,7 @@ src/
 - `src/exporter/exporter.test.ts` — 8 export e2e tests (zip layout / components / unused-component pruning / pages.json / hidden-node consistency / theme vars / TSX refs / slug uniqueness + hash router)
 - `src/exporter/guard.test.ts` — 4 drift-guard tests (template props ⊆ registry fields; event key format; table completeness / no stale keys)
 - `src/exporter/write-zip.test.ts` — 1 zip-to-disk test (two pages + navigate, for manual real-build verification)
+- `src/lib/png.test.ts` — 6 board-export tests (default 2× and 1–3 clamp, NaN/Infinity fallback, filename illegal-char replacement and dash collapsing, empty-name `board` fallback, zero-padded date)
 
 **Export real-build check:** verified (zip → extract → `npm i` → `tsc` + Vite build green → `vite preview` HTTP 200).
 
