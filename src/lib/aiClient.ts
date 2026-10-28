@@ -1,10 +1,13 @@
 // 远程 AI 网关客户端（可选增强）
 // 配置来自「设置」里的运行时设置（src/lib/aiSettings.ts，只存本浏览器 localStorage），
 // 不再从 .env 读取：改配置不需要重新构建。所有调用失败均返回 null，上层回退到规则引擎。
-import { isAiConfigured, loadAiSettings, type AiSettings } from './aiSettings';
+import { isAiConfigured, isLocalBaseUrl, isValidBaseUrl, loadAiSettings, type AiSettings } from './aiSettings';
 
+/** 本地端点可以不填 key，此时不发送 Authorization 头 */
 function authHeaders(cfg: AiSettings): Record<string, string> {
-  return { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' };
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cfg.apiKey) h.Authorization = `Bearer ${cfg.apiKey}`;
+  return h;
 }
 
 /** OpenAI 兼容 /v1/embeddings；未配置或失败返回 null */
@@ -53,8 +56,8 @@ export async function rerank(
 /** 设置弹层的「测试连接」：成功返回 null，失败返回可读原因（不回传密钥） */
 export async function testAiConnection(cfg: AiSettings): Promise<string | null> {
   if (!cfg.baseUrl) return 'EMPTY_URL';
-  if (!cfg.apiKey) return 'EMPTY_KEY';
-  if (!isAiConfigured(cfg)) return 'BAD_URL';
+  if (!isValidBaseUrl(cfg.baseUrl)) return 'BAD_URL';
+  if (!cfg.apiKey && !isLocalBaseUrl(cfg.baseUrl)) return 'EMPTY_KEY';
   try {
     const res = await fetch(`${cfg.baseUrl}/v1/embeddings`, {
       method: 'POST',

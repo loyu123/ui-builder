@@ -59,7 +59,7 @@ src/
 
 ## Tests
 
-**161 tests** (`npm test`):
+**162 tests** (`npm test`):
 
 - `src/lib/coords.test.ts` — 6 coordinate tests (zoom / nesting / scroll)
 - `src/lib/snap.test.ts` — 4 snap-matching tests (nearest candidate / threshold / multi-edge)
@@ -114,7 +114,7 @@ Threat model is a **local prototyping tool with an optional self-hosted gateway*
 
 | Surface | Current behaviour |
 |---|---|
-| Secrets | AI key lives only in this browser: `localStorage` by default (`ui-builder:ai-settings`, across sessions), or `sessionStorage` when "remember key" is unchecked (gone when the tab closes). Never in the repo, never in exports; UI shows it masked. Don't type a production key on a shared machine |
+| Secrets | AI key lives only in this browser: `localStorage` by default (`ui-builder:ai-settings`, across sessions), or `sessionStorage` when "remember key" is unchecked (gone when the tab closes). Never in the repo, never in exports; UI shows it masked. **Local endpoints (localhost / 127.0.0.1 / *.local) may leave the key empty.** Don't type a production key on a shared machine |
 | CSP | Production builds inject a `Content-Security-Policy` from `vite.config.ts` (`script-src 'self'`, `object-src 'none'`, `base-uri 'self'`; `style-src` needs `'unsafe-inline'` for React inline styles). Dev builds skip it so HMR keeps working |
 | Build-time config | No `VITE_*` secrets (those end up in public bundles); `.env*` stays gitignored |
 | Data reset | "Clear cache and reset" also clears AI settings |
@@ -128,7 +128,8 @@ Threat model is a **local prototyping tool with an optional self-hosted gateway*
 - **v1.0:** pure frontend, offline; rule-based AI; React static export
 - **v1.1:** event-binding UI (with real `navigate` routing in exports), theme token editor, interactive preview, layer tree, batch operations, PR CI, sliced store, graded snapshots, drift-guard tests
 - **v1.2 (current):** multi-project management, template library, 6-way align/distribute, layer-tree upgrades, board PNG export, export scope (pages/devices), spacing marks
-- **Later:** optional remote AI (embed/rerank gateway), coverage in CI gate
+- **v1.3 candidate:** screenshot → interface (upload → model parse → post-process → pick & drop onto canvas). See [docs/screenshot-to-interface.md](./docs/screenshot-to-interface.md). Models are user-configured (cloud gateway or local Ollama / LM Studio; local endpoints need no key)
+- **Later:** coverage in CI gate
 - **Out of scope:** multiplayer collab, responsive cross-device layout, real-device preview, backend business logic (see S1–S3 delivery switches)
 
 ## Demo script

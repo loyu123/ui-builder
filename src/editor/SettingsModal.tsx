@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { useT } from '../lib/i18n';
-import { DEFAULT_AI_SETTINGS, isValidBaseUrl, maskApiKey, normalizeAiSettings, normalizeBaseUrl } from '../lib/aiSettings';
+import { DEFAULT_AI_SETTINGS, isLocalBaseUrl, isValidBaseUrl, maskApiKey, normalizeAiSettings, normalizeBaseUrl } from '../lib/aiSettings';
 import { testAiConnection } from '../lib/aiClient';
 import { IconEye, IconEyeOff } from './icons';
 
@@ -35,6 +35,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
 
   const normalizedUrl = normalizeBaseUrl(baseUrl);
   const urlBad = Boolean(normalizedUrl) && !isValidBaseUrl(normalizedUrl);
+  const localEndpoint = isLocalBaseUrl(normalizedUrl);   // 本地模型：key 可留空
   const canSave = !urlBad;
 
   function draft() {
@@ -92,6 +93,9 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
             onChange={e => { setBaseUrl(e.target.value); setMsg(null); }}
           />
           {urlBad && <span style={{ fontSize: 10, color: '#dc2626' }}>{t('settings_invalid_url')}</span>}
+          {localEndpoint && !urlBad && (
+            <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>{t('settings_local_key_optional')}</span>
+          )}
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

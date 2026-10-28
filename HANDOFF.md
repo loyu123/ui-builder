@@ -6,7 +6,7 @@
 ## 1. 现在是什么状态
 
 - 版本线：v1.1.0 已发布；v1.2.0 功能全部落地（多项目 / 模板 / 对齐 / 图层树 / 画板导图 / 导出范围 / 间距标注），版本号与 CHANGELOG 已更新，剩 Pages 部署线上回归。
-- 质量门：**160 条单测全绿**、`oxlint` 0 warning、`tsc --noEmit` 干净、`vite build` 绿。CI（lint + test + build）为合并前提。
+- 质量门：**162 条单测全绿**、`oxlint` 0 warning、`tsc --noEmit` 干净、`vite build` 绿。CI（lint + test + build）为合并前提。
 - 纯前端单机应用：无后端、无账号、数据全在浏览器 IndexedDB。
 
 ## 2. 怎么跑起来
@@ -17,7 +17,7 @@
 cd /home/dev/ui-builder
 npm install          # 首次
 npm run dev          # http://localhost:5173
-npm test             # vitest run（160 条）
+npm test             # vitest run（162 条）
 npm run lint         # oxlint
 npm run build        # tsc -b && vite build
 ```
@@ -114,6 +114,7 @@ src/
 ## 8. 剩余待办
 
 - v1.2.0 已发布（版本号 / CHANGELOG / README 徽标均已更新）；本地已按 `GITHUB_PAGES=1` 构建并 `vite preview` 验证 `/ui-builder/` 首页与 JS 资源 200，剩 push 后看线上 actions 结果。
+- **v1.3 候选 · 截图转界面**：规划已写入 `docs/screenshot-to-interface.md`（不做后端、模型由使用者自配、本地端点免密钥）。M0a（契约 + 映射 + 后处理 + 落画布，数据源用本地 JSON 粘贴）不依赖任何 API Key，可先合入主干。
 - 可选：coverage 基线纳入 CI（现为本地 `npm run test:coverage`，门禁仅 lint+test+build）。
 
 ## 9. 提交与协作约定

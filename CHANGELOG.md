@@ -7,11 +7,17 @@
 ### 新增
 
 - **设置弹层（SET-01）**：顶栏齿轮打开，可配置 AI 网关地址、API Key、Embedding 模型、Reranker 模型，并提供「测试连接」「保存」「清除」。配置只写本浏览器 `localStorage`（`ui-builder:ai-settings`），不入库、不随导出，改配置无需重新构建；AI 面板的模式提示可直接点开设置。
+- **本地模型支持**：新增 `isLocalBaseUrl()`（`localhost` / `127.0.0.1` / `::1` / `*.local` / `host.docker.internal`），这些端点**允许不填 API Key**；`isAiConfigured` 与「测试连接」同步放宽，请求头仅在填了密钥时才带 `Authorization`；设置弹层对本地地址给出「Key 可留空」提示。
 
 ### 变更
 
 - 移除 `.env.example` 与全部 `VITE_AI_*` 环境变量读取（仓库不再保存任何网关地址 / 密钥）；`.gitignore` 同步去掉 `.env.example` 例外。AI 网关改为运行时设置。
 - 文档（README 中英 / HANDOFF）改为描述运行时设置，不再要求复制 `.env`。
+
+### 文档
+
+- 新增 `docs/screenshot-to-interface.md`：截图转界面的可落地规划（纯前端、无后端代理、模型由使用者自配；契约 / 真实类型映射 / 后处理算法 / 里程碑 / 验收 / 风险）。
+- README 中英路线图补链接；`HANDOFF.md` 记录 M0a 可先合入。
 
 ### 安全
 

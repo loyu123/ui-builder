@@ -39,6 +39,26 @@ export function isValidBaseUrl(baseUrl: string): boolean {
   }
 }
 
+/**
+ * 本地端点判定（Ollama / LM Studio / vLLM 等）：这类地址视为使用者自己的机器，
+ * 允许不填 API Key —— 开源工具不应逼本地用户造一个假密钥
+ */
+export function isLocalBaseUrl(baseUrl: string): boolean {
+  if (!baseUrl) return false;
+  try {
+    const host = new URL(baseUrl).hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    return host === 'localhost'
+      || host === '127.0.0.1'
+      || host === '0.0.0.0'
+      || host === '::1'
+      || host === 'host.docker.internal'
+      || host.endsWith('.local')
+      || host.endsWith('.localhost');
+  } catch {
+    return false;
+  }
+}
+
 /** 归一化：模型名留空回退默认，密钥去空白 */
 export function normalizeAiSettings(input?: Partial<AiSettings> | null): AiSettings {
   const src = input ?? {};
@@ -51,9 +71,10 @@ export function normalizeAiSettings(input?: Partial<AiSettings> | null): AiSetti
   };
 }
 
-/** 地址与密钥都齐备才算配置完成 */
+/** 地址合法 +（本机端点 或 有密钥）才算配置完成 */
 export function isAiConfigured(s: AiSettings): boolean {
-  return Boolean(s.baseUrl && s.apiKey) && isValidBaseUrl(s.baseUrl);
+  if (!s.baseUrl || !isValidBaseUrl(s.baseUrl)) return false;
+  return Boolean(s.apiKey) || isLocalBaseUrl(s.baseUrl);
 }
 
 /** 展示用脱敏：只露前 3 后 2 */

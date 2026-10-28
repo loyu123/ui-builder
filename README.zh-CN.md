@@ -57,7 +57,7 @@ src/
 
 ## 测试
 
-共 **161 条**（`npm test`）：
+共 **162 条**（`npm test`）：
 
 - `src/lib/coords.test.ts` — 坐标换算 6 条（zoom/嵌套/滚动，硬约束）
 - `src/lib/snap.test.ts` — 吸附匹配 4 条（最近候选/阈值/多边整体最优）
@@ -98,7 +98,7 @@ src/
 
 | 面 | 现状 |
 |---|---|
-| 密钥 | 只存本浏览器：默认 `localStorage`（`ui-builder:ai-settings`，跨会话）；取消「记住密钥」则改存 `sessionStorage`，关页即失效。不入库、不随导出；界面只显示脱敏值。**公共电脑请勿填真实密钥** |
+| 密钥 | 只存本浏览器：默认 `localStorage`（`ui-builder:ai-settings`，跨会话）；取消「记住密钥」则改存 `sessionStorage`，关页即失效。不入库、不随导出；界面只显示脱敏值。**本地端点（localhost / 127.0.0.1 / *.local）可留空密钥**。公共电脑请勿填真实密钥 |
 | CSP | 生产构建由 `vite.config.ts` 注入 `Content-Security-Policy`（`script-src 'self'`、`object-src 'none'`、`base-uri 'self'`，`style-src` 需 `'unsafe-inline'` 以兼容 React 内联样式）；开发环境不注入，避免打断 HMR |
 | 构建参数 | 不使用 `VITE_*` 传密钥——那会被打进公开产物；仓库内不含任何网关地址/密钥（`.env*` 全部忽略） |
 | 清空数据 | 「清空缓存并重置」一并清除 AI 设置，避免误以为已重置 |
@@ -112,7 +112,8 @@ src/
 - **v1.0**：纯前端单机版；AI 规则引擎；导出 React 静态工程
 - **v1.1**：事件绑定 UI（导出 navigate 真实跳页）、主题令牌编辑、预览互动、PR CI、store 切片化、漂移守卫测试
 - **v1.2（当前）**：多项目管理、模板库、6 向对齐/等距分布、图层树增量、画板导出 PNG、导出范围（页面/设备）、间距标注
-- **后续**：可选远程 AI（embed/rerank 本地网关）、coverage 纳入门禁
+- **v1.3 候选**：截图转界面（上传截图 → 模型识别 → 后处理 → 勾选落画布），规划见 [docs/screenshot-to-interface.md](./docs/screenshot-to-interface.md)；模型由使用者自配（云端网关或本地 Ollama / LM Studio，本地端点免密钥）
+- **后续**：coverage 纳入门禁
 - **不做**：多人协作、响应式联动、真机预览、后端逻辑（见 S1~S3 交付开关）
 
 ## 演示脚本

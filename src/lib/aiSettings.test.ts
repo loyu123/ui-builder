@@ -2,7 +2,7 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import {
   AI_SETTINGS_STORAGE_KEY, DEFAULT_AI_SETTINGS, normalizeBaseUrl, isValidBaseUrl,
-  normalizeAiSettings, isAiConfigured, maskApiKey, loadAiSettings, saveAiSettings, clearAiSettings,
+  normalizeAiSettings, isAiConfigured, isLocalBaseUrl, maskApiKey, loadAiSettings, saveAiSettings, clearAiSettings,
 } from './aiSettings';
 
 /** 极简内存 Storage 替身（node 环境没有 localStorage / sessionStorage） */
@@ -68,6 +68,20 @@ describe('AI 设置', () => {
     expect(isAiConfigured({ ...base, apiKey: '' })).toBe(false);
     expect(isAiConfigured({ ...base, baseUrl: '' })).toBe(false);
     expect(isAiConfigured({ ...base, baseUrl: 'gw.example.com' })).toBe(false);
+  });
+
+  it('本地端点识别：本机 / 局域网 .local / docker，且允许不填密钥', () => {
+    expect(isLocalBaseUrl('http://127.0.0.1:11434')).toBe(true);
+    expect(isLocalBaseUrl('http://localhost:1234/v1')).toBe(true);
+    expect(isLocalBaseUrl('http://[::1]:8080')).toBe(true);
+    expect(isLocalBaseUrl('http://ollama.local')).toBe(true);
+    expect(isLocalBaseUrl('http://host.docker.internal:11434')).toBe(true);
+    expect(isLocalBaseUrl('https://gw.example.com')).toBe(false);
+    expect(isLocalBaseUrl('')).toBe(false);
+
+    // 本地端点免 key；云端仍必须填
+    expect(isAiConfigured({ ...DEFAULT_AI_SETTINGS, baseUrl: 'http://127.0.0.1:11434' })).toBe(true);
+    expect(isAiConfigured({ ...DEFAULT_AI_SETTINGS, baseUrl: 'https://gw.example.com' })).toBe(false);
   });
 
   it('密钥脱敏只露前 3 后 2', () => {
