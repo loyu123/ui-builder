@@ -12,6 +12,8 @@ import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ProjectModal } from './ProjectModal';
+import { ExportModal } from './ExportModal';
+import type { ExportScope } from '../exporter/scope';
 import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
 export function AppShell() {
@@ -25,6 +27,7 @@ export function AppShell() {
   const [ready, setReady] = useState(false);   // P2-28 · IndexedDB 读取完成前显示骨架，避免闪默认空项目
   const [dragType, setDragType] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);   // F1 · 项目管理弹层
+  const [showExport, setShowExport] = useState(false);       // F8 · 导出范围弹层
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showToast(msg: string) {
@@ -139,9 +142,10 @@ export function AppShell() {
     setPreviewing(v => !v);
   }
 
-  async function exportZip() {
+  // F8 · 导出工程 zip（scope 决定页面 / 设备范围；不传 = 全量）
+  async function exportZip(scope?: ExportScope) {
     const { exportProjectZip } = await import('../exporter/exporter');
-    const bytes = await exportProjectZip(useStore.getState().project);
+    const bytes = await exportProjectZip(useStore.getState().project, scope);
     localStorage.setItem('ub-last-export', String(Date.now()));
     const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
     const a = document.createElement('a');
@@ -233,7 +237,7 @@ export function AppShell() {
           >
             {t('export_png')}
           </button>
-          <button onClick={exportZip} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
+          <button onClick={() => setShowExport(true)} className="ub-btn ub-btn-pad ub-btn-accent" style={{ flex: 'none' }}>
             {t('export_zip')}
           </button>
           <button
@@ -262,6 +266,14 @@ export function AppShell() {
 
         {/* F1 · 项目管理弹层 */}
         {showProjects && <ProjectModal onClose={() => setShowProjects(false)} />}
+
+        {/* F8 · 导出范围弹层 */}
+        {showExport && (
+          <ExportModal
+            onClose={() => setShowExport(false)}
+            onConfirm={scope => { setShowExport(false); void exportZip(scope); }}
+          />
+        )}
 
         {/* P2-26 · 轻提示 */}
         {toast && (

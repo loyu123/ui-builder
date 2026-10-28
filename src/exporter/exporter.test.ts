@@ -133,4 +133,33 @@ describe('EX · 导出工程端到端', () => {
     // data/pages.json 回读校验不受导出改造影响
     expect(names.length).toBeGreaterThan(0);
   });
+
+  it('F8：设备范围只生成选中设备，index.tsx 默认导出该设备', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const bytes = await exportProjectZip(useStore.getState().project, { devices: ['desktop'] });
+    const zip = await JSZip.loadAsync(bytes);
+    const names = Object.keys(zip.files);
+    expect(names).toContain('ui-builder-export/web/src/pages/Page/Desktop.tsx');
+    expect(names).not.toContain('ui-builder-export/web/src/pages/Page/Mobile.tsx');
+    expect(names).not.toContain('ui-builder-export/web/src/pages/Page/Watch.tsx');
+    const idx = await zip.file('ui-builder-export/web/src/pages/Page/index.tsx')!.async('string');
+    expect(idx).toContain("import Desktop from './Desktop'");
+    expect(idx).toContain('export default Desktop');
+  });
+
+  it('F8：页面范围只导出选中页，pages.json 同步收窄', async () => {
+    useStore.setState({ project: createEmptyProject() });
+    const a = useStore.getState().actions;
+    a.addPage();
+    const project = useStore.getState().project;
+    const keep = project.pages[1];
+    const bytes = await exportProjectZip(project, { pageIds: [keep.id] });
+    const zip = await JSZip.loadAsync(bytes);
+    const json = JSON.parse(await zip.file('ui-builder-export/data/pages.json')!.async('string'));
+    expect(json.pages.map((p: { id: string }) => p.id)).toEqual([keep.id]);
+    const pageDirs = Object.keys(zip.files)
+      .map(n => n.match(/^ui-builder-export\/web\/src\/pages\/([^/]+)\//)?.[1])
+      .filter(Boolean);
+    expect([...new Set(pageDirs)]).toEqual(['Page2']);
+  });
 });

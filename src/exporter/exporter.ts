@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { REGISTRY_MAP } from '../modules/registry';
 import type { Board, DeviceId, Node, Page, Project } from '../types';
 import { componentBody } from './templates';
+import { applyExportScope, defaultDevice, type ExportScope } from './scope';
 
 // P1-15 · 组件模板在 templates.ts；此处 re-export 供 guard 测试使用
 export { componentBody };
@@ -98,7 +99,9 @@ ${children}
 }
 
 // ---------- 主流程 ----------
-export async function exportProjectZip(project: Project): Promise<Uint8Array> {
+// F8 · scope 可限定导出哪些页面与哪些设备画板；不传则全量（与旧行为一致）
+export async function exportProjectZip(input: Project, scope: ExportScope = {}): Promise<Uint8Array> {
+  const { project, devices } = applyExportScope(input, scope);
   const zip = new JSZip();
   const f = (path: string, content: string) => zip.file(`${ROOT}/${path}`, content);
 
@@ -207,16 +210,18 @@ ${actionCases || '    // 当前设计未挂接任何事件'}
 }
 `);
 
-  // 页面（每页 × 每设备）；文件夹名 = 组件 slug（ASCII 稳定，同名页已唯一化）
+  // 页面（每页 × 范围内设备）；文件夹名 = 组件 slug（ASCII 稳定，同名页已唯一化）
+  const mainDev = defaultDevice(devices);
+  const mainComp = mainDev.charAt(0).toUpperCase() + mainDev.slice(1);
   for (const pg of project.pages) {
     const slug = pageNames.get(pg.id)!;
-    for (const device of ['desktop', 'mobile', 'watch'] as DeviceId[]) {
+    for (const device of devices) {
       f(`web/src/pages/${slug}/${device.charAt(0).toUpperCase() + device.slice(1)}.tsx`,
         pageTsx(pg, device, slug, usedModules, colorVars));
     }
     f(`web/src/pages/${slug}/index.tsx`,
-`import Mobile from './Mobile';
-export default Mobile;
+`import ${mainComp} from './${mainComp}';
+export default ${mainComp};
 `);
   }
 
@@ -298,6 +303,7 @@ cd web && npm install && npm run dev
 ## 目录
 - \`web/\` React 前端（页面按 页面/设备 组织，events 为接口位）
 - \`data/pages.json\` 设计数据（schema v${project.schemaVersion}）
+- 导出范围：${project.pages.length} 个页面 · 设备 ${devices.join(' / ')}（范围由导出时的勾选决定）
 - \`backend/\` 后端占位（S1 默认不含骨架）
 - \`scripts/dev.sh\` 一键启动
 - \`scripts/verify.sh\` 导出回归：安装→类型检查→构建
