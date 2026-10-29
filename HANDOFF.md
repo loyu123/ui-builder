@@ -101,6 +101,7 @@ src/
 - exporter 直接解 zip 断言内容（规格文件、组件裁剪、pages.json 回读、范围收窄、路由）。
 - i18n 有键一致性测试：**新增文案必须 zh/en 同时加**，否则测试红。
 - 已知坑：`idb-keyval` 测试用 `clearAll()` 造空库 + `new IDBFactory()` 注入；`currentDevice` 默认是 `mobile`，断言 pages 文件时注意。
+- 覆盖率门禁：`npm run test:coverage` 会校验 `vite.config.ts` 的 `test.coverage.thresholds`（语句 80 / 分支 75 / 函数 79 / 行 82，统计范围 lib + store + ai + exporter + types）；低于下限直接失败，PR 的 `ci.yml` 跑的就是这一条。降覆盖率的大改动需要同 PR 补测，不要靠调阈值绕过。
 
 ## 7. 已知限制
 
@@ -114,17 +115,17 @@ src/
 
 ## 8. 剩余待办
 
-- v1.2.0 已上线：版本号 / CHANGELOG / README 徽标已同步，GitHub Pages（`GITHUB_PAGES=1` → base `/ui-builder/`）产物 `index-BbWqNEXZ.js` 已确认包含视觉自检与提示文案。
+- v1.2.0 已上线：版本号 / CHANGELOG / README 徽标已同步，GitHub Pages（`GITHUB_PAGES=1` → base `/ui-builder/`）产物已确认包含视觉自检与离线入口新文案。
 - **v1.3 候选 · 截图转界面**：规划见 `docs/screenshot-to-interface.md`（不做后端、模型由使用者自配、本地端点免密钥）。
   - M0a（契约 + 映射 + 后处理 + 落画布，数据源用本地 JSON 粘贴）✅ 已合入，不依赖任何 API Key。
   - M0b（`multimodalClient` + 设置里的「视觉模型」+ 超时/取消/本地端点免 key）✅ 已合入。
   - M1（可用）**功能项已完成**：低置信度「核对」与「只选高置信度」、行内改类型/复制/删除、叠加框拖动与缩放微调、列对齐（含右边缘聚类）、占位块降级。**唯一未闭环项是 M1 验收里的「识别率 ≥60%」**——需要使用者用自己的模型跑 5 张真实截图自验，本仓库不内置任何网关或密钥，因此不在 CI 内。
-- 可选：coverage 基线纳入 CI（现为本地 `npm run test:coverage`，门禁仅 lint+test+build）。
+- coverage 已纳入 PR 门禁（2026-10-29），无剩余可选待办。
 
 ## 9. 提交与协作约定
 
 - 提交格式：`<type>(<scope>): <摘要>`；type = feat | fix | refactor | perf | test | docs | chore | ci；scope = canvas | store | exporter | ai | editor | docs | ci。
-- 一次改动配一次验证：`oxlint` + `vitest run` + `tsc --noEmit` / `vite build`，三项都过再提交。
+- 一次改动配一次验证：`oxlint` + `vitest run`（+ `npm run test:coverage` 看阈值是否还稳） + `tsc --noEmit` / `vite build`，都过再提交。
 - 新增 UI 文案必须 zh/en 同步；新增纯函数优先补单测（本项目测试成本低、收益高）。
 - 编辑器 chrome 的图标统一走 `src/editor/icons.tsx` 的线性 SVG（24 格视框 / 1.7px 描边 / `currentColor`），不要再引入彩色 emoji；画布内的模块占位内容（🖼 🔔 📶 🔋 等）属于设计稿素材，保持原样。
 - PowerShell → WSL 传参时括号/管道易被吞：复杂命令用 `wsl -d UIBuilder -- bash -lc "..."`，或把脚本写到 `/mnt/c` 下再执行。

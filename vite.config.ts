@@ -47,6 +47,14 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/lib/**', 'src/store/**', 'src/ai/**', 'src/exporter/**', 'src/types.ts'],
       exclude: ['**/*.test.ts', 'src/store/demo.ts'],
+      // CI 门禁：比当前实测基线（stmts 82 / branch 78 / funcs 81 / lines 84）低约 2 个点，
+      // 留出重构与新增未测代码的余量；只做回归下限，不追高。
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 79,
+        lines: 82,
+      },
     },
   },
 })

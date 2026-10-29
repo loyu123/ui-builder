@@ -118,7 +118,7 @@ src/
 - **v1.1**：事件绑定 UI（导出 navigate 真实跳页）、主题令牌编辑、预览互动、PR CI、store 切片化、漂移守卫测试
 - **v1.2（当前）**：多项目管理、模板库、6 向对齐/等距分布、图层树增量、画板导出 PNG、导出范围（页面/设备）、间距标注
 - **v1.3 候选**：截图转界面（上传截图 → 模型识别 → 后处理 → 勾选落画布），规划见 [docs/screenshot-to-interface.md](./docs/screenshot-to-interface.md)；模型由使用者自配（云端网关或本地 Ollama / LM Studio，本地端点免密钥）
-- **后续**：coverage 纳入门禁
+- **已完成**：coverage 纳入 PR 门禁（阈值写在 `vite.config.ts` 的 `test.coverage.thresholds`）
 - **不做**：多人协作、响应式联动、真机预览、后端逻辑（见 S1~S3 交付开关）
 
 ## 演示脚本
@@ -128,12 +128,13 @@ src/
 ## 覆盖率
 
 运行 `npm run test:coverage`（v8 provider，仅统计核心逻辑：lib / store / ai / exporter / types）。
-基线（2026-10-27，tree/actions 补测后）：**exporter 97% · ai/engine 96% · lib 整体 71%（tree.ts/snap.ts 100% 行覆盖）· store/actions 69%**；UI 组件不计入门禁。
+当前基线（2026-10-29）：**总体 语句 82% · 分支 78% · 函数 81% · 行 84%**（exporter 97% · ai/engine 96% · store/actions 69% · lib 77%，其中 png.ts 与 aiClient.ts 是 UI/网络侧、覆盖偏低）；UI 组件不计入门禁。
+CI 门禁阈值为 **语句 80 / 分支 75 / 函数 79 / 行 82**（低约 2 个点留余量），低于下限 `npm run test:coverage` 直接失败。
 
 ## 贡献约定
 
 提交信息格式：`<type>(<scope>): <摘要>`；类型 feat | fix | refactor | perf | test | docs | chore | ci，范围 canvas | store | exporter | ai | editor | docs | ci。
-PR 由 ci.yml 跑 lint + test + build；main 推送由 pages.yml 部署 GitHub Pages；coverage 仅本地 `npm run test:coverage`，不作为 CI 门禁。
+PR 由 ci.yml 跑 lint + `test:coverage`（含覆盖率门禁）+ build；main 推送由 pages.yml 跑 test + build 并部署 GitHub Pages。
 
 ## License
 

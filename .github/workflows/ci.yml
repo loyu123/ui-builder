@@ -13,6 +13,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test
-      - run: npm run test:coverage   # 报告型：输出覆盖率，不设门禁
+      # 覆盖率即门禁：跑测试同时校验 vite.config.ts 里的 thresholds，低于下限直接红
+      - run: npm run test:coverage
       - run: npm run build

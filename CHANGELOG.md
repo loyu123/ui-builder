@@ -19,6 +19,7 @@
 ### 变更
 
 - 顶栏「截图转界面」入口不再因未配置网关/视觉模型而禁用：未配置时仍可打开，走弹层内「粘贴 JSON」离线路径（「识别」按钮单独置灰并提示去设置）。
+- CI 覆盖率纳入门禁：`vite.config.ts` 增加 `test.coverage.thresholds`（语句 80 / 分支 75 / 函数 79 / 行 82，统计范围 lib + store + ai + exporter + types），`ci.yml` 的 PR 守门改为跑 `npm run test:coverage`（一次跑完测试并卡覆盖率，替掉原来的 `npm test` + 仅报告）；README 中英覆盖率章节同步最新基线与阈值。
 - 移除 `.env.example` 与全部 `VITE_AI_*` 环境变量读取（仓库不再保存任何网关地址 / 密钥）；`.gitignore` 同步去掉 `.env.example` 例外。AI 网关改为运行时设置。
 - 文档（README 中英 / HANDOFF）改为描述运行时设置，不再要求复制 `.env`。
 

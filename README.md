@@ -103,7 +103,7 @@ scopes: canvas | store | exporter | ai | editor | docs | ci
 example: feat(canvas): keep drag preview in local state until pointerup
 ```
 
-PR CI (`ci.yml`) runs lint + test + build on pull requests; `main` pushes deploy to GitHub Pages (`pages.yml`). Coverage reports are local-only (`npm run test:coverage`), not a CI gate.
+PR CI (`ci.yml`) runs lint + `test:coverage` (coverage is a gate) + build on pull requests; `main` pushes run tests + build and deploy to GitHub Pages (`pages.yml`).
 
 ## Implementation notes
 
@@ -134,7 +134,7 @@ Threat model is a **local prototyping tool with an optional self-hosted gateway*
 - **v1.1:** event-binding UI (with real `navigate` routing in exports), theme token editor, interactive preview, layer tree, batch operations, PR CI, sliced store, graded snapshots, drift-guard tests
 - **v1.2 (current):** multi-project management, template library, 6-way align/distribute, layer-tree upgrades, board PNG export, export scope (pages/devices), spacing marks
 - **v1.3 candidate:** screenshot → interface (upload → model parse → post-process → pick & drop onto canvas). See [docs/screenshot-to-interface.md](./docs/screenshot-to-interface.md). Models are user-configured (cloud gateway or local Ollama / LM Studio; local endpoints need no key)
-- **Later:** coverage in CI gate
+- **Done:** coverage is a PR gate (thresholds live in `vite.config.ts` → `test.coverage.thresholds`)
 - **Out of scope:** multiplayer collab, responsive cross-device layout, real-device preview, backend business logic (see S1–S3 delivery switches)
 
 ## Demo script
@@ -143,7 +143,8 @@ See [DEMO.md](./DEMO.md) (Chinese) for a walkthrough.
 
 ## Coverage
 
-Run `npm run test:coverage` (v8 provider, core logic only: lib / store / ai / exporter / types). UI components are excluded from the gate. Current baseline lives in this section's git history; see the Tests section above for per-file suites.
+Run `npm run test:coverage` (v8 provider, core logic only: lib / store / ai / exporter / types). UI components are excluded from the gate. Current baseline (2026-10-29): **statements 82% · branches 78% · functions 81% · lines 84%** (exporter 97% · ai/engine 96% · store/actions 69% · lib 77%; `png.ts` and `aiClient.ts` are the low spots — canvas/network side).
+CI thresholds: **statements 80 / branches 75 / functions 79 / lines 82** (about two points of headroom); `npm run test:coverage` fails below them.
 
 ## License
 
