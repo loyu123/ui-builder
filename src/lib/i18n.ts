@@ -85,7 +85,7 @@ const zh: Record<string, string> = {
   settings_close: '关闭',
   // SS · 截图转界面
   ss_title: '截图转界面',
-  ss_topbar_locked: '先在「设置」里填网关与视觉模型（本地端点也可，Key 可留空）',
+  ss_topbar_hint: '识别需先在「设置」里填网关与视觉模型（本地端点也可，Key 可留空）；未配置也能打开，用「粘贴 JSON」离线兜底',
   ss_hint_image: '可选：选一张截图做参考。只在当前页面内存中使用，不写入项目、不随导出。',
   ss_choose_image: '选择截图（或拖入）',
   ss_remove_image: '移除截图',
@@ -333,7 +333,7 @@ const en: Record<string, string> = {
   settings_clear: 'Clear',
   settings_close: 'Close',
   ss_title: 'Screenshot to UI',
-  ss_topbar_locked: 'Set a gateway + vision model in Settings first (a local endpoint works, key can be empty)',
+  ss_topbar_hint: 'Recognition needs a gateway + vision model in Settings (a local endpoint works, key can be empty); you can still open it and paste JSON offline',
   ss_hint_image: 'Optional: pick a screenshot as reference. Kept in memory for this page only — never saved to the project or exports.',
   ss_choose_image: 'Choose or drop a screenshot',
   ss_remove_image: 'Remove screenshot',

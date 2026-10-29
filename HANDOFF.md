@@ -110,11 +110,15 @@ src/
 - 旋转是视觉变换，吸附/框选/AI 对齐按未旋转外接矩形近似。
 - 远端 AI 网关（Embedding / Reranker）在顶栏 **齿轮 → 设置** 里运行时配置：写 `localStorage` 的 `ui-builder:ai-settings`，不写库、不随导出、无需重新构建；未配置或调用失败时回退纯规则引擎。https 页面访问 http 网关会被浏览器拦截（混合内容）。
 - 预览模式只读编辑手势，表单交互与 `navigate` 跳转可用。
+- 截图转界面：顶栏入口**不因未配置模型而禁用**，始终可打开——「识别」按钮置灰并提示去设置，弹层内「粘贴 JSON」离线路径照常可用；识别率取决于使用者自配的视觉模型，不做兜底承诺。
 
 ## 8. 剩余待办
 
-- v1.2.0 已发布（版本号 / CHANGELOG / README 徽标均已更新）；本地已按 `GITHUB_PAGES=1` 构建并 `vite preview` 验证 `/ui-builder/` 首页与 JS 资源 200，剩 push 后看线上 actions 结果。
-- **v1.3 候选 · 截图转界面**：规划已写入 `docs/screenshot-to-interface.md`（不做后端、模型由使用者自配、本地端点免密钥）。M0a（契约 + 映射 + 后处理 + 落画布，数据源用本地 JSON 粘贴）不依赖任何 API Key，可先合入主干。
+- v1.2.0 已上线：版本号 / CHANGELOG / README 徽标已同步，GitHub Pages（`GITHUB_PAGES=1` → base `/ui-builder/`）产物 `index-BbWqNEXZ.js` 已确认包含视觉自检与提示文案。
+- **v1.3 候选 · 截图转界面**：规划见 `docs/screenshot-to-interface.md`（不做后端、模型由使用者自配、本地端点免密钥）。
+  - M0a（契约 + 映射 + 后处理 + 落画布，数据源用本地 JSON 粘贴）✅ 已合入，不依赖任何 API Key。
+  - M0b（`multimodalClient` + 设置里的「视觉模型」+ 超时/取消/本地端点免 key）✅ 已合入。
+  - M1（可用）**功能项已完成**：低置信度「核对」与「只选高置信度」、行内改类型/复制/删除、叠加框拖动与缩放微调、列对齐（含右边缘聚类）、占位块降级。**唯一未闭环项是 M1 验收里的「识别率 ≥60%」**——需要使用者用自己的模型跑 5 张真实截图自验，本仓库不内置任何网关或密钥，因此不在 CI 内。
 - 可选：coverage 基线纳入 CI（现为本地 `npm run test:coverage`，门禁仅 lint+test+build）。
 
 ## 9. 提交与协作约定

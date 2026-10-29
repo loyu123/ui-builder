@@ -238,12 +238,11 @@ export function AppShell() {
           {/* 截图转界面 / 预览 / 导出 PNG / 导出工程 / 设置 / 语言切换 */}
           <button
             onClick={() => setShowScreenshot(true)}
-            disabled={!visionReady}
-            title={visionReady ? t('ss_title') : t('ss_topbar_locked')}
+            title={visionReady ? t('ss_title') : t('ss_topbar_hint')}
             className="ub-btn ub-btn-pad"
             style={{
               flex: 'none', display: 'flex', alignItems: 'center', gap: 5,
-              opacity: visionReady ? 1 : 0.45, cursor: visionReady ? 'pointer' : 'not-allowed',
+              opacity: visionReady ? 1 : 0.6,
             }}
           >
             <IconScreenshot size={13} />
