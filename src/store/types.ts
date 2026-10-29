@@ -2,6 +2,7 @@
 import type { Board, DeviceId, EventSpec, Frame, Node, Page, Project, ThemeTokens } from '../types';
 import type { ProjectEntry } from '../lib/projectIndex';
 import type { AiSettings } from '../lib/aiSettings';
+import type { NodeSpec } from './builders';
 import type { AlignDir, DistributeAxis } from '../lib/align';
 
 export type PagesSnapshot = Page[];
@@ -46,6 +47,8 @@ export interface Actions {
   undo: () => void;
   redo: () => void;
   addNode: (type: string, frame: Frame, parentId?: string) => void;
+  /** SS-01 · 批量落地（截图识别）：单条历史，返回落地数量 */
+  addNodesTree: (specs: NodeSpec[]) => number;
   moveNode: (id: string, x: number, y: number, newParentId?: string | null) => void;
   resizeNode: (id: string, frame: Frame) => void;
   setProp: (id: string, key: string, value: unknown) => void;

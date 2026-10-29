@@ -14,7 +14,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { ProjectModal } from './ProjectModal';
 import { ExportModal } from './ExportModal';
 import { SettingsModal } from './SettingsModal';
-import { IconDevice, IconSettings } from './icons';
+import { ScreenshotModal } from './ScreenshotModal';
+import { IconDevice, IconScreenshot, IconSettings } from './icons';
 import type { ExportScope } from '../exporter/scope';
 import { useT, setLang, getLang, moduleLabel } from '../lib/i18n';
 
@@ -30,6 +31,7 @@ export function AppShell() {
   const [dragType, setDragType] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);   // F1 · 项目管理弹层
   const [showExport, setShowExport] = useState(false);       // F8 · 导出范围弹层
+  const [showScreenshot, setShowScreenshot] = useState(false); // SS · 截图转界面弹层
   const showSettings = useStore(s => s.settings.open);       // SET-01 · 设置弹层（AI 网关）
   const openSettings = useStore(s => s.actions.openSettings);
   const closeSettings = useStore(s => s.actions.closeSettings);
@@ -230,7 +232,16 @@ export function AppShell() {
 
           <span style={{ flex: 1 }} />
 
-          {/* 预览 / 导出 PNG / 导出工程 / 设置 / 语言切换 */}
+          {/* 截图转界面 / 预览 / 导出 PNG / 导出工程 / 设置 / 语言切换 */}
+          <button
+            onClick={() => setShowScreenshot(true)}
+            title={t('ss_title')}
+            className="ub-btn ub-btn-pad"
+            style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5 }}
+          >
+            <IconScreenshot size={13} />
+            {t('ss_title')}
+          </button>
           <button onClick={togglePreview} className="ub-btn ub-btn-pad" style={{ flex: 'none' }}>
             {previewing ? t('exit_preview') : t('preview')}
           </button>
@@ -283,6 +294,15 @@ export function AppShell() {
           <ExportModal
             onClose={() => setShowExport(false)}
             onConfirm={scope => { setShowExport(false); void exportZip(scope); }}
+          />
+        )}
+
+        {/* SS · 截图转界面（识别 / 粘贴 JSON → 预览勾选 → 落画布） */}
+        {showScreenshot && (
+          <ScreenshotModal
+            onClose={() => setShowScreenshot(false)}
+            onLanded={n => showToast(t('ss_landed', { n: String(n) }))}
+            onOpenSettings={() => { setShowScreenshot(false); openSettings(); }}
           />
         )}
 

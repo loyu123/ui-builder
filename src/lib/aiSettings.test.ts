@@ -2,7 +2,7 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import {
   AI_SETTINGS_STORAGE_KEY, DEFAULT_AI_SETTINGS, normalizeBaseUrl, isValidBaseUrl,
-  normalizeAiSettings, isAiConfigured, isLocalBaseUrl, maskApiKey, loadAiSettings, saveAiSettings, clearAiSettings,
+  normalizeAiSettings, isAiConfigured, isVisionConfigured, isLocalBaseUrl, maskApiKey, loadAiSettings, saveAiSettings, clearAiSettings,
 } from './aiSettings';
 
 /** 极简内存 Storage 替身（node 环境没有 localStorage / sessionStorage） */
@@ -56,9 +56,12 @@ describe('AI 设置', () => {
     expect(s).toEqual({
       baseUrl: 'https://gw.example.com', apiKey: 'sk-abc',
       embedModel: DEFAULT_AI_SETTINGS.embedModel, rerankModel: DEFAULT_AI_SETTINGS.rerankModel,
+      visionModel: DEFAULT_AI_SETTINGS.visionModel,
       remember: true,           // 缺省勾选「记住密钥」
     });
     expect(normalizeAiSettings({ embedModel: '  ', rerankModel: 'my-rerank' }).rerankModel).toBe('my-rerank');
+    expect(normalizeAiSettings({ visionModel: '  ' }).visionModel).toBe(DEFAULT_AI_SETTINGS.visionModel);
+    expect(normalizeAiSettings({ visionModel: ' qwen2.5vl:7b ' }).visionModel).toBe('qwen2.5vl:7b');
     expect(normalizeAiSettings(null)).toEqual(DEFAULT_AI_SETTINGS);
   });
 
@@ -82,6 +85,15 @@ describe('AI 设置', () => {
     // 本地端点免 key；云端仍必须填
     expect(isAiConfigured({ ...DEFAULT_AI_SETTINGS, baseUrl: 'http://127.0.0.1:11434' })).toBe(true);
     expect(isAiConfigured({ ...DEFAULT_AI_SETTINGS, baseUrl: 'https://gw.example.com' })).toBe(false);
+  });
+
+  it('视觉模型：网关可用之外还必须有模型名', () => {
+    const local = { ...DEFAULT_AI_SETTINGS, baseUrl: 'http://127.0.0.1:11434' };
+    expect(isVisionConfigured(local)).toBe(true);
+    expect(isVisionConfigured({ ...local, visionModel: '  ' })).toBe(false);
+    // 模型名留空会被归一化回默认值，不会真的落到「没模型」
+    expect(isVisionConfigured(normalizeAiSettings({ ...local, visionModel: '' }))).toBe(true);
+    expect(isVisionConfigured({ ...local, baseUrl: '' })).toBe(false);
   });
 
   it('密钥脱敏只露前 3 后 2', () => {

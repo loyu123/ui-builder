@@ -11,6 +11,7 @@ import type { StoreApi } from 'zustand';
 import type { Node } from '../types';
 import { isProject, isValidProject } from '../types';
 import { emptyBoard, emptyProject, pick, scheduleSave } from './project';
+import { insertSpecs } from './builders';
 import { makeHistory } from './history';
 import { makeProjects } from './projects';
 import type { Store } from './types';
@@ -48,6 +49,21 @@ export function makeActions(set: Set, get: Get): Store['actions'] {
       });
       scheduleSave(p);
       set({ project: p, editor: { ...s.editor, selection: [] } });
+    },
+
+    // SS-01 · 截图识别结果批量落地：一个事务 + 一条历史（Ctrl+Z 一次全撤），落完选中新节点
+    addNodesTree: specs => {
+      if (!specs.length) return 0;
+      const s = get();
+      hist.pushHistory('screenshot');
+      let ids: string[] = [];
+      const p = produce(s.project, draft => {
+        const { board } = pick(draft, s.editor.currentPageId, s.editor.currentDevice);
+        ids = insertSpecs(board, specs).map(n => n.id);
+      });
+      scheduleSave(p);
+      set({ project: p, editor: { ...s.editor, selection: ids } });
+      return ids.length;
     },
 
     // CV-04/06 · 提交位置；newParentId 不同则重挂载

@@ -1,9 +1,8 @@
 // F2 · 内置模板库：全部用 registry 元数据构建（style/props 以模块定义为底，模板只覆盖需要的键），
 // 保证模板与模块库不漂移（templates.test.ts 校验 props 键 ⊆ registry 字段/默认 props）。
 // v1.2.1 · 每套模板同时提供 **手机（390×844）** 与 **电脑（1440×900）** 两套布局；手表画板留空待设计。
-import { uid } from '../lib/id';
-import { REGISTRY_MAP } from '../modules/registry';
-import type { Board, Node, Project } from '../types';
+import { mk } from '../store/builders';
+import type { Board, Project } from '../types';
 import { emptyProject } from '../store/project';
 
 export interface TemplateDef {
@@ -12,40 +11,6 @@ export interface TemplateDef {
   labelEn: string;
   devices: Array<'mobile' | 'desktop'>;
   build: () => Project;
-}
-
-type Frame = { x: number; y: number; w: number; h: number };
-
-interface MkOpts {
-  props?: Record<string, unknown>;
-  note?: string;
-  style?: Record<string, string | number>;
-  parentId?: string;
-}
-
-// 在画板里追加一个模块（默认挂根；props 以 registry 默认值为底，style 可局部覆盖）
-function mk(board: Board, type: string, frame: Frame, opts: MkOpts = {}): Node {
-  const meta = REGISTRY_MAP[type];
-  const root = board.nodes[board.rootId];
-  const parentId = opts.parentId ?? root.id;
-  const n: Node = {
-    id: uid('n'),
-    type,
-    name: meta?.label ?? type,
-    parentId,
-    children: [],
-    frame,
-    style: { ...(meta?.style ?? {}), ...(opts.style ?? {}) },
-    props: {
-      ...(JSON.parse(JSON.stringify(meta?.props ?? {})) as Record<string, unknown>),
-      ...(opts.props ?? {}),
-    },
-    events: { onClick: { action: 'none', note: '占位，后续接真实行为' } },
-  };
-  if (opts.note) n.note = opts.note;
-  board.nodes[parentId].children.push(n.id);
-  board.nodes[n.id] = n;
-  return n;
 }
 
 /** 新建一个只含单页的项目骨架，同时返回手机/电脑两块画板 */

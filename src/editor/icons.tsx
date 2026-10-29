@@ -69,6 +69,23 @@ export const IconKeyboard = (p: IconProps) => (
   </Svg>
 );
 
+/** 截图转界面（取景框 + 山） */
+export const IconScreenshot = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5A2.5 2.5 0 0 1 18.5 21H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16" />
+    <circle cx="9" cy="9.5" r="1.4" />
+    <path d="M4.5 17.5 9.6 12.4l3.2 3.2 2.2-2.2 4.5 4.5" />
+  </Svg>
+);
+
+/** 复制（预览行复制） */
+export const IconCopy = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="9" y="9" width="11" height="11" rx="2.5" />
+    <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-6A2.5 2.5 0 0 0 4 5.5v6A2.5 2.5 0 0 0 6.5 14" />
+  </Svg>
+);
+
 /** 齿轮（设置入口） */
 export const IconSettings = (p: IconProps) => (
   <Svg {...p}>

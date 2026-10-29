@@ -21,6 +21,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
   const [apiKey, setApiKey] = useState(ai.apiKey);
   const [embedModel, setEmbedModel] = useState(ai.embedModel);
   const [rerankModel, setRerankModel] = useState(ai.rerankModel);
+  const [visionModel, setVisionModel] = useState(ai.visionModel);
   const [remember, setRemember] = useState(ai.remember);
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -39,7 +40,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
   const canSave = !urlBad;
 
   function draft() {
-    return normalizeAiSettings({ baseUrl, apiKey, embedModel, rerankModel, remember });
+    return normalizeAiSettings({ baseUrl, apiKey, embedModel, rerankModel, visionModel, remember });
   }
 
   function save() {
@@ -55,6 +56,7 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
     setApiKey(DEFAULT_AI_SETTINGS.apiKey);
     setEmbedModel(DEFAULT_AI_SETTINGS.embedModel);
     setRerankModel(DEFAULT_AI_SETTINGS.rerankModel);
+    setVisionModel(DEFAULT_AI_SETTINGS.visionModel);
     setRemember(DEFAULT_AI_SETTINGS.remember);
     setMsg(null);
     onCleared?.();
@@ -142,6 +144,17 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
               onChange={e => setRerankModel(e.target.value)} />
           </label>
         </div>
+
+        {/* SS · 截图转界面用的视觉模型：同一网关、同一密钥，图片由使用者选择的端点处理 */}
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span className="ub-label-sm">{t('settings_vision_model')}</span>
+          <input className="ub-field" value={visionModel} spellCheck={false} autoComplete="off"
+            placeholder={t('settings_vision_model_ph')}
+            onChange={e => setVisionModel(e.target.value)} />
+          <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>
+            {localEndpoint ? t('settings_vision_local') : t('settings_vision_cloud')}
+          </span>
+        </label>
 
         {/* SEC-04 · 默认记住；不勾选则只存到本次会话（关页即失效） */}
         <label className="ub-row" style={{ gap: 6, padding: '2px 0', cursor: 'pointer', fontSize: 11 }}>

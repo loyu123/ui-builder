@@ -6,6 +6,7 @@ export interface AiSettings {
   apiKey: string;
   embedModel: string;
   rerankModel: string;
+  visionModel: string; // SS · 截图转界面的视觉模型（与 embed/rerank 共用同一网关与密钥）
   remember: boolean;   // SEC-04 · 是否记住密钥（false = 只保留到本次会话结束）
 }
 
@@ -16,6 +17,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   apiKey: '',
   embedModel: 'text-embedding-3-small',
   rerankModel: 'rerank-v3',
+  visionModel: 'qwen2.5-vl-7b-instruct',
   remember: true,
 };
 
@@ -67,6 +69,7 @@ export function normalizeAiSettings(input?: Partial<AiSettings> | null): AiSetti
     apiKey: (src.apiKey ?? '').trim(),
     embedModel: (src.embedModel ?? '').trim() || DEFAULT_AI_SETTINGS.embedModel,
     rerankModel: (src.rerankModel ?? '').trim() || DEFAULT_AI_SETTINGS.rerankModel,
+    visionModel: (src.visionModel ?? '').trim() || DEFAULT_AI_SETTINGS.visionModel,
     remember: src.remember !== false,
   };
 }
@@ -75,6 +78,11 @@ export function normalizeAiSettings(input?: Partial<AiSettings> | null): AiSetti
 export function isAiConfigured(s: AiSettings): boolean {
   if (!s.baseUrl || !isValidBaseUrl(s.baseUrl)) return false;
   return Boolean(s.apiKey) || isLocalBaseUrl(s.baseUrl);
+}
+
+/** 截图转界面：网关配好之外还要有模型名 */
+export function isVisionConfigured(s: AiSettings): boolean {
+  return isAiConfigured(s) && Boolean(s.visionModel.trim());
 }
 
 /** 展示用脱敏：只露前 3 后 2 */
