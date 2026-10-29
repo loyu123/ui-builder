@@ -115,7 +115,7 @@ export function processModules(
   }));
 
   // 5. IoU 去重（高置信度优先保留）
-  const order = mods.map((m, i) => i).sort((a, b) => mods[b].confidence - mods[a].confidence);
+  const order = mods.map((_, i) => i).sort((a, b) => mods[b].confidence - mods[a].confidence);
   const kept: number[] = [];
   const overlapWarn = new Set<number>();
   for (const i of order) {
