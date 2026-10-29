@@ -1,6 +1,6 @@
 # 界面搭建器（UI Builder）
 
-> **v1.2.0** · [MIT License](./LICENSE) · [English](./README.md) · [更新记录](./CHANGELOG.md) · [交接说明 HANDOFF](./HANDOFF.md)
+> **v1.2.1** · [MIT License](./LICENSE) · [English](./README.md) · [更新记录](./CHANGELOG.md) · [交接说明 HANDOFF](./HANDOFF.md)
 
 > **私人自用说明（重要）**
 > - 本项目是**个人自用的原型搭建工具**，不是生产级多人协作产品，不承诺 SLA、安全审计或多人同时编辑。

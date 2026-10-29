@@ -1,6 +1,6 @@
 # UI Builder
 
-> **v1.2.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Changelog](./CHANGELOG.md) · [Handoff notes](./HANDOFF.md)
+> **v1.2.1** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Changelog](./CHANGELOG.md) · [Handoff notes](./HANDOFF.md)
 
 > **Personal-use notice (important)**
 > - This is a **personal prototype-building tool**, not a production multi-user product — no SLA, no security audit, no real-time multi-user editing.

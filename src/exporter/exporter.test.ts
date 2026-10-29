@@ -39,6 +39,14 @@ describe('EX · 导出工程端到端', () => {
     }
   });
 
+  it('P3-43：导出的 verify.sh 用本地 npx 调 tsc（干净环境无全局 tsc）', async () => {
+    const bytes = await buildZip();
+    const zip = await JSZip.loadAsync(bytes);
+    const sh = await zip.file('ui-builder-export/scripts/verify.sh')!.async('string');
+    expect(sh).toContain('npx --no-install tsc -b');
+    expect(sh).not.toMatch(/^\s*tsc -b\s*$/m);
+  });
+
   it('30 个模块组件全部生成', async () => {
     const bytes = await buildZip();
     const zip = await JSZip.loadAsync(bytes);

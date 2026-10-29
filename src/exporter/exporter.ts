@@ -333,7 +333,8 @@ services:
 `);
   f('backend/README.md', '# backend（占位）\n\nS1 交付范围不含后端骨架。events 中 action=bind/submit 的接口位即未来的对接点。\n');
   f('scripts/dev.sh', '#!/usr/bin/env bash\nset -e\ncd "$(dirname "$0")/../web"\nnpm install\nnpm run dev\n');
-  f('scripts/verify.sh', '#!/usr/bin/env bash\n# EX-05 · 导出回归（降级版：无截图比对，构建绿即通过）\nset -e\ncd "$(dirname "$0")/../web"\nnpm install\ntsc -b\nnpm run build\necho "verify: OK"\n');
+  // 用 npx --no-install 调本地 tsc：干净环境里没有全局 tsc，裸调 'tsc -b' 会 command not found
+  f('scripts/verify.sh', '#!/usr/bin/env bash\n# EX-05 · 导出回归（降级版：无截图比对，构建绿即通过）\nset -e\ncd "$(dirname "$0")/../web"\nnpm install\nnpx --no-install tsc -b\nnpm run build\necho "verify: OK"\n');
   f('.github/workflows/ci.yml',
 `name: ci
 on: [push]
