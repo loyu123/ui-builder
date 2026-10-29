@@ -229,7 +229,7 @@ export function ScreenshotModal({ onClose, onLanded, onOpenSettings }: {
   const warnCount = result ? result.items.filter(i => i.tier === 'warn').length : 0;
   const aiErrText = aiErr
     ? (aiErr.kind === 'HTTP'
-      ? t('ss_ai_err_http', { status: aiErr.status ?? '' })
+      ? t('ss_ai_err_http', { status: aiErr.status ?? '', model: ai.visionModel })
       : t(`ss_ai_err_${aiErr.kind.toLowerCase()}`))
     : '';
   const spaceLabel = result
@@ -364,8 +364,11 @@ export function ScreenshotModal({ onClose, onLanded, onOpenSettings }: {
         {aiErr && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: '#dc2626' }}>
             <span>{aiErrText}</span>
+            {aiErr.kind === 'HTTP' && (
+              <span style={{ color: 'var(--faint-2)' }}>{t('ss_ai_err_http_hint')}</span>
+            )}
             {aiErr.raw && (
-              <details>
+              <details open={aiErr.kind === 'HTTP'}>
                 <summary style={{ cursor: 'pointer', color: 'var(--faint-2)' }}>{t('ss_ai_raw')}</summary>
                 <pre style={{ margin: 0, maxHeight: 120, overflow: 'auto', fontSize: 10, whiteSpace: 'pre-wrap', color: 'var(--faint-2)' }}>
                   {aiErr.raw}

@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useT } from '../lib/i18n';
 import { DEFAULT_AI_SETTINGS, isLocalBaseUrl, isValidBaseUrl, maskApiKey, normalizeAiSettings, normalizeBaseUrl } from '../lib/aiSettings';
 import { testAiConnection } from '../lib/aiClient';
+import { probeVision } from '../lib/screenshot/vision';
 import { IconEye, IconEyeOff } from './icons';
 
 export function SettingsModal({ onClose, onSaved, onCleared }: {
@@ -26,6 +27,8 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [visionTesting, setVisionTesting] = useState(false);
+  const [visionMsg, setVisionMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Esc 关闭（弹层开着时不抢画布快捷键）
   useEffect(() => {
@@ -73,9 +76,27 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
       : { ok: true, text: t('settings_test_ok') });
   }
 
+  /** 视觉链路自检：真的发一张 1×1 图，错误原因原样带回来 */
+  async function testVision() {
+    if (!canSave || visionTesting) return;
+    setVisionTesting(true);
+    setVisionMsg(null);
+    const p = await probeVision(draft());
+    setVisionTesting(false);
+    if (p.ok) {
+      setVisionMsg({ ok: true, text: t('settings_vision_test_ok', { model: p.model }) });
+      return;
+    }
+    const reason = p.kind === 'HTTP'
+      ? `HTTP ${p.status ?? ''} ${p.detail ?? ''}`.trim()
+      : t(`ss_ai_err_${(p.kind ?? 'NETWORK').toLowerCase()}`);
+    setVisionMsg({ ok: false, text: t('settings_vision_test_fail', { reason }) });
+  }
+
   return (
     <div className="ub-mask" onPointerDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="ub-modal" role="dialog" aria-label={t('settings_title')}>
+      <div className="ub-modal" role="dialog" aria-label={t('settings_title')}
+        style={{ maxHeight: '88vh', overflowY: 'auto' }}>
         <div className="ub-modal-head">
           {t('settings_title')}
           <button className="ub-icon-btn" style={{ marginLeft: 'auto' }} onClick={onClose} title={t('sc_esc')}>✕</button>
@@ -154,6 +175,17 @@ export function SettingsModal({ onClose, onSaved, onCleared }: {
           <span style={{ fontSize: 10, color: 'var(--faint-2)' }}>
             {localEndpoint ? t('settings_vision_local') : t('settings_vision_cloud')}
           </span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <button className="ub-btn" style={{ fontSize: 11, flexShrink: 0 }} disabled={visionTesting}
+              onClick={() => { void testVision(); }}>
+              {visionTesting ? t('settings_vision_testing') : t('settings_vision_test')}
+            </button>
+            {visionMsg && (
+              <span style={{ fontSize: 10, color: visionMsg.ok ? '#166534' : '#dc2626', wordBreak: 'break-all' }}>
+                {visionMsg.text}
+              </span>
+            )}
+          </div>
         </label>
 
         {/* SEC-04 · 默认记住；不勾选则只存到本次会话（关页即失效） */}

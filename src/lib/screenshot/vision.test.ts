@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildChatBody, buildVisionPrompt, extractJson, fitWithin, pickCompletionText,
-  recognizeScreenshot, MAX_IMAGE_EDGE, type FetchLike,
+  probeVision, recognizeScreenshot, MAX_IMAGE_EDGE, PROBE_IMAGE, type FetchLike,
 } from './vision';
 import { DEFAULT_AI_SETTINGS, type AiSettings } from '../aiSettings';
 
@@ -143,6 +143,28 @@ describe('screenshot · 视觉模型客户端', () => {
     };
     const r = await recognizeScreenshot(IMG, { cfg, fetchImpl, signal: outer.signal });
     expect(r).toMatchObject({ ok: false, kind: 'ABORTED' });
+  });
+
+  it('视觉自检：400 时带回状态码与网关原文', async () => {
+    const fetchImpl: FetchLike = () => Promise.resolve(res({ error: { message: 'model not found' } }, 400));
+    const p = await probeVision({ ...cfg, visionModel: 'no-such-vl' }, fetchImpl);
+    expect(p.ok).toBe(false);
+    expect(p.model).toBe('no-such-vl');
+    expect(p.kind).toBe('HTTP');
+    expect(p.status).toBe(400);
+    expect(p.detail).toContain('model not found');
+  });
+
+  it('视觉自检：成功时只报告可用，且发的是 1×1 探针图', async () => {
+    let body = '';
+    const fetchImpl: FetchLike = (_url, init) => {
+      body = String(init?.body ?? '');
+      return Promise.resolve(res(completion('{"modules":[]}')));
+    };
+    const p = await probeVision(cfg, fetchImpl);
+    expect(p).toMatchObject({ ok: true, model: cfg.visionModel });
+    expect(body).toContain(PROBE_IMAGE);
+    expect(body).toContain('"max_tokens":1500');
   });
 
   it('网络异常返回 NETWORK 并带原因', async () => {

@@ -2,6 +2,11 @@
 
 > **v1.2.0** · [MIT License](./LICENSE) · [中文文档](./README.zh-CN.md) · [Changelog](./CHANGELOG.md) · [Handoff notes](./HANDOFF.md)
 
+> **Personal-use notice (important)**
+> - This is a **personal prototype-building tool**, not a production multi-user product — no SLA, no security audit, no real-time multi-user editing.
+> - API keys live only in **the visitor's own browser storage** (`localStorage` / `sessionStorage`); no server ever receives them. Use your own device, and skip “remember key” on shared computers.
+> - The editor talks to model providers **directly from the frontend**, with no backend proxy. That is deliberate (we never host keys or quotas), not an oversight.
+
 A visual UI builder: blank canvas + drag-and-drop modules → multi-device layout design → event binding / theme tokens / notes → one-click export of an interactive multi-page React project.
 
 **Stack:** React 19 + TypeScript + Vite + dnd-kit + zustand/immer + IndexedDB (idb-keyval) + JSZip.

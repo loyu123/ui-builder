@@ -6,6 +6,7 @@ import { demoLoginProject } from '../store/demo';
 import type { DeviceId } from '../types';
 import { REGISTRY_MAP } from '../modules/registry';
 import { screenToBoard } from '../lib/coords';
+import { isVisionConfigured } from '../lib/aiSettings';
 import { findContainerAt, absOrigin } from '../lib/tree';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
@@ -35,6 +36,8 @@ export function AppShell() {
   const showSettings = useStore(s => s.settings.open);       // SET-01 · 设置弹层（AI 网关）
   const openSettings = useStore(s => s.actions.openSettings);
   const closeSettings = useStore(s => s.actions.closeSettings);
+  // 未配网关/视觉模型时顶栏入口置灰（避免点进去才发现没配置）
+  const visionReady = useStore(s => isVisionConfigured(s.settings.ai));
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showToast(msg: string) {
@@ -235,9 +238,13 @@ export function AppShell() {
           {/* 截图转界面 / 预览 / 导出 PNG / 导出工程 / 设置 / 语言切换 */}
           <button
             onClick={() => setShowScreenshot(true)}
-            title={t('ss_title')}
+            disabled={!visionReady}
+            title={visionReady ? t('ss_title') : t('ss_topbar_locked')}
             className="ub-btn ub-btn-pad"
-            style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5 }}
+            style={{
+              flex: 'none', display: 'flex', alignItems: 'center', gap: 5,
+              opacity: visionReady ? 1 : 0.45, cursor: visionReady ? 'pointer' : 'not-allowed',
+            }}
           >
             <IconScreenshot size={13} />
             {t('ss_title')}

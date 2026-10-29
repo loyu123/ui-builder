@@ -116,6 +116,7 @@ export function buildChatBody(model: string, dataUrl: string, prompt = buildVisi
   return {
     model,
     temperature: 0,
+    max_tokens: 1500,   // 兜底上限：省 token，也避免个别网关因为缺省值报 400
     stream: false,
     messages: [
       {
@@ -127,6 +128,34 @@ export function buildChatBody(model: string, dataUrl: string, prompt = buildVisi
       },
     ],
   };
+}
+
+/** 1×1 透明 PNG：只用来验证「这个模型名到底能不能收图片」 */
+export const PROBE_IMAGE
+  = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+export interface VisionProbe {
+  ok: boolean;
+  model: string;
+  kind?: VisionErrorKind;
+  status?: number;
+  detail?: string;
+}
+
+/**
+ * 设置弹层的「测试视觉模型」：发一张 1×1 图，只验证通路（模型是否存在、是否收图片、鉴权是否通过）。
+ * 用真实的 chat/completions 而不是 /v1/models —— 有的网关 models 列表很全但视觉模型不可用。
+ */
+export async function probeVision(cfg: AiSettings, fetchImpl?: FetchLike, timeoutMs = VISION_TIMEOUT_MS): Promise<VisionProbe> {
+  const model = cfg.visionModel.trim();
+  const r = await recognizeScreenshot(PROBE_IMAGE, {
+    cfg,
+    fetchImpl,
+    timeoutMs,
+    prompt: 'Reply with exactly {"modules":[]} and nothing else.',
+  });
+  if (r.ok) return { ok: true, model };
+  return { ok: false, model, kind: r.kind, status: r.status, detail: r.raw };
 }
 
 function isAbortError(err: unknown): boolean {

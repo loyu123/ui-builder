@@ -2,6 +2,11 @@
 
 > **v1.2.0** · [MIT License](./LICENSE) · [English](./README.md) · [更新记录](./CHANGELOG.md) · [交接说明 HANDOFF](./HANDOFF.md)
 
+> **私人自用说明（重要）**
+> - 本项目是**个人自用的原型搭建工具**，不是生产级多人协作产品，不承诺 SLA、安全审计或多人同时编辑。
+> - 所有 API Key 只保存在**访问者本机的浏览器**（`localStorage` / `sessionStorage`），不经过任何服务器；请在自己的设备上填写，不要在公用电脑上勾选「记住密钥」。
+> - 编辑器**前端直连**模型服务商、没有后端代理——这是有意设计（不托管密钥、不做配额中心），不是遗漏。
+
 可视化 UI 搭建工具：空白画布 + 拖拽模块 → 多设备界面设计 → 事件绑定 / 主题 / 功能备注 → 一键导出可交互的 React 多页工程。
 
 **技术栈：** React 19 + TypeScript + Vite + dnd-kit + zustand/immer + IndexedDB（idb-keyval）+ JSZip。
