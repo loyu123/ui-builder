@@ -115,7 +115,8 @@ src/
 
 ## 8. 剩余待办
 
-- v1.2.0 已上线：版本号 / CHANGELOG / README 徽标已同步，GitHub Pages（`GITHUB_PAGES=1` → base `/ui-builder/`）产物已确认包含视觉自检与离线入口新文案。
+- **项目已结项（2026-10-29，v1.2.1）**：发布 tag `v1.2.1` → `d578987`，`v1.2.0` 停在 `d34f37e`；GitHub Pages 产物与版本号一致；结项结论见 `Desktop/UI界面/ui-builder-project-closure-note.md`（仓库外）。
+- v1.2.0 / v1.2.1 已上线：版本号 / CHANGELOG / README 徽标已同步，GitHub Pages（`GITHUB_PAGES=1` → base `/ui-builder/`）产物已确认包含视觉自检与离线入口新文案。
 - **v1.3 候选 · 截图转界面**：规划见 `docs/screenshot-to-interface.md`（不做后端、模型由使用者自配、本地端点免密钥）。
   - M0a（契约 + 映射 + 后处理 + 落画布，数据源用本地 JSON 粘贴）✅ 已合入，不依赖任何 API Key。
   - M0b（`multimodalClient` + 设置里的「视觉模型」+ 超时/取消/本地端点免 key）✅ 已合入。
